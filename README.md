@@ -5,16 +5,22 @@ UniversalQCompiler provides a Mathematica package that allows to decompose gener
 *  Decomposing  isometries from *m* to *n* qubits, and hence, in particular decomposing arbitrary unitaries on *m* qubits and to do state preparation
 *  Decomposing  quantum channels from *m* to *n* qubits
 *  Decomposing POVMs on *m* qubits
-*  Simplifying gate sequences by merging single-qubit rotations and cancelling C-NOTs that are next to each other
+*  Simplifying gate sequences
 *  Drawing quantum circuits within Mathematica
 *  Exporting quantum circuits to LATEX
 *  Running quantum circuits on the IBM Q Experience (using the OpenQASM converter)
 
 A detailed documentation of the Mathematica package can be found on our [webpage](http://www-users.york.ac.uk/~rc973/UniversalQCompiler.html). The notebook Examples.nb helps the user to get started quickly and provides a short overview over the methods provided by UniversalQCompiler.
 
-This project also contains a converter to translate gate sequences from the Mathematica package UniversalQCompiler to gate sequences in Python using the QASM language of ProjectQ.
+This project also contains a converter (based on [ProjectQ](https://github.com/ProjectQ-Framework/ProjectQ)) to translate gate sequences from the Mathematica package UniversalQCompiler to [OpenQASM](https://arxiv.org/abs/1707.03429), the quantum assembly language used, for instance, by the IBM Q Experience.
 
 Moreover, we provide bindings to directly link Python to Mathematica. This is however provided without any guarantees or support in the directory `UNSTABLE`
+
+## Overview
+
+The diagram below indicates how the Mathematica packages [QI](https://github.com/rogercolbeck/QI) and UniversalQCompiler can be used to analyse quantum information protocols for running on some quantum hardware:
+
+![alt text](Overview.png)
 
 ## Getting started
 
@@ -23,7 +29,7 @@ To use our Mathematica package UniversalQCompiler.m, you need to have installed 
 Note that the Makefile is only used for the unstable bindings to Python. You do not need any Makefile for the Mathematica package or the QASM converter.
 
 ## Please cite
-An overview over the package UniversalQCompiler and some theoretical background about the decomposition methods that it uses can be found on arXiv:1904.01072.
+An overview over the package UniversalQCompiler and some theoretical background about the decomposition methods that it uses can be found on [arXiv:1904.01072](https://arxiv.org/pdf/1904.01072.pdf).
 
 ## References
 
