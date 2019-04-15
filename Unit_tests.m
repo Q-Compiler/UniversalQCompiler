@@ -1560,8 +1560,51 @@ Print["All tests for State preparation pass"],,
 )]
 
 
+CheckCNOTtoXX[v_]:=Module[{st,st2,iso,ch},
+st=DecIsometryGeneric[v];st2=CNOTRotationsToXXRGates[st];
+iso=CreateOperationFromGateList[st2,Log[2,Dimensions[v][[1]]]];ch=CT[v].iso;
+Chop[ch/ch[[1,1]]-IdentityMatrix[Dimensions[iso][[2]]],10^-6]==0*IdentityMatrix[Dimensions[iso][[2]]]]
+
+CheckXXtoCNOT[v_]:=Module[{st,st2,st3,iso,ch},
+st=DecIsometryGeneric[v];st2=CNOTRotationsToXXRGates[st];
+st3=XXRGatesToCNOTRotations[st2];
+iso=CreateOperationFromGateList[st3,Log[2,Dimensions[v][[1]]]];ch=CT[v].iso;
+Chop[ch/ch[[1,1]]-IdentityMatrix[Dimensions[iso][[2]]],10^-6]==0*IdentityMatrix[Dimensions[iso][[2]]]]
+
+TestCNOTtoXX:=Module[{error=0},If[Quiet[Check[CheckCNOTtoXX[PickRandomIsometry[2^2,2^2]],error=1;False]]&&
+Quiet[Check[CheckCNOTtoXX[PickRandomIsometry[2^2,2^3]],error=2;False]]&&
+Quiet[Check[CheckCNOTtoXX[PickRandomIsometry[2^2,2^4]],error=3;False]]&&
+Quiet[Check[CheckCNOTtoXX[PickRandomIsometry[2^3,2^3]],error=4;False]]&&
+Quiet[Check[CheckCNOTtoXX[PickRandomIsometry[2^3,2^4]],error=5;False]]&&
+Quiet[Check[CheckCNOTtoXX[randPermutMat[4,4]],error=6;False]]&&
+Quiet[Check[CheckCNOTtoXX[N[randPermutMat[8,8]]],error=7;False]]
+,
+True,
+Print["Error in CheckCNOTtoXX with error message code ",error];False
+]]
+
+TestXXtoCNOT:=Module[{error=0},If[Quiet[Check[CheckXXtoCNOT[PickRandomIsometry[2^2,2^2]],error=1;False]]&&
+Quiet[Check[CheckXXtoCNOT[PickRandomIsometry[2^2,2^3]],error=2;False]]&&
+Quiet[Check[CheckXXtoCNOT[PickRandomIsometry[2^2,2^4]],error=3;False]]&&
+Quiet[Check[CheckXXtoCNOT[PickRandomIsometry[2^3,2^3]],error=4;False]]&&
+Quiet[Check[CheckXXtoCNOT[PickRandomIsometry[2^3,2^4]],error=5;False]]&&
+Quiet[Check[CheckXXtoCNOT[randPermutMat[4,4]],error=6;False]]&&
+Quiet[Check[CheckXXtoCNOT[N[randPermutMat[8,8]]],error=7;False]]
+,
+True,
+Print["Error in CheckXXtoCNOT with error message code ",error];False
+]]
+
+testXXCNOTAll := Module[{},(
+If[TestCNOTtoXX&&TestXXtoCNOT,
+Print["All tests for converting to and from XX gates pass"],,
+ Print["testXXCNOTAll did not return True or False"]
+]
+)]
+
+
 (*Run all tests*)
-runAllTests:=Module[{},(testAllBasicMethods;testUCGs;testAllDiagGateMethods;testIsoSmall;testCCDec;testDec2Qubit;testDecSingleQubit;testQSDAll;testQSD;testStatePreparationAll;testAllMCGMethods;testKnill;testIsometryDecompositions;testStinespring;testPOVM)]
+runAllTests:=Module[{},(testAllBasicMethods;testUCGs;testAllDiagGateMethods;testIsoSmall;testCCDec;testDec2Qubit;testDecSingleQubit;testQSDAll;testQSD;testStatePreparationAll;testAllMCGMethods;testKnill;testIsometryDecompositions;testStinespring;testPOVM;testXXCNOTAll)]
 
 
 Timing[runAllTests]
