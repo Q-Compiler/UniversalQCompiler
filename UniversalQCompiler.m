@@ -3813,7 +3813,7 @@ smaller than number of output qubits."]]];
    out = Insert[out, {2, 2*\[Pi]*RandomReal[], targ}, -1]; 
    out = Insert[out, {1, 2*\[Pi]*RandomReal[], targ}, -1]]; out]
    
-   (* Commands for convertion to XX and R *)
+(* Commands for conversion to XX and R *)
 
 (* outputs (a,b,c,d) such that U is equal to Rx[a] followed by R[b,c] up to the phase E^(I*d) *)
  RxRGateDecomp[U_]:=Module[{a,b,c,d,th,phi},
