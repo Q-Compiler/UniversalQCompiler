@@ -150,7 +150,7 @@ POVMToIsometry::usage="TBA."
 DecChannelInQCM::usage="TBA."
 DecPOVMInQCM::usage="TBA."
 PrepareForQASM::usage="PrepareForQASM[gatelist] takes a list of gates and prepares it into a form suitable for use with the python script that converts to QASM."
-PickRandomCircuitIsometry::usage="PickRandomCircuitIsometry[m,n,t] creates a random circuit from m qubits to n qubits with t CNOTs, where an arbitrary single qubit unitary is included at the start and after each CNOT."
+PickRandomCircuitIsometry::usage="PickRandomCircuitIsometry[m,n,t] creates a random circuit from m qubits to n qubits with t CNOTs, where an arbitrary single qubit unitary is included at the start and after each CNOT. With Option TotGates->True, the value of t is the total number of gates and these are placed randomly."
 RxRGateDecomp::usage="RxRGateDecomp[u] takes a single qubit unitary u and outputs (a,b,c,d) such that u is equal to Rx[a] followed by R[b,c] up to the phase E^(I*d)."
 ReplaceCNOTWithXX::usage="ReplaceCNOTWithXX[st] takes a gate list and replaces all CNOT gates with XX gates and additional single qubit rotations."
 ReplaceXXWithCNOT::usage="ReplaceXXWithCNOT[st] takes a gate list and replaces all XX gates with CNOTs and additional single qubit rotations."
@@ -3790,28 +3790,26 @@ IsListForm[st_,methodName_:"UNKNOWN"]:=Module[{postsel,postselnums,traceout,trac
   
 PrepareForQASM[st_]:=Module[{out,traceouts,traceoutnums,i},out=NGateList[st];If[Cases[out,{5,_,_}]==={},,Print["Notice: ancillas found in the input have been removed.  Output gate sequence corresponds to the same operation as the input provided the ancillas in the input sequence start in the correct states."];out=DeleteCases[out,{5,_,_}]];If[Cases[out,{-2,_,_}]==={},,Throw["Error in PrepareForQASM: diagonal gates found in the input, which is not supported by QASM. You may want to decompose them using DecDiagGate[]."];out=DeleteCases[out,{-2,_,_}]];If[Cases[st,{6,_,_}]==={},,Print["Warning: postselection gate found in the input has been removed.  Output gate sequence may not be as intended."];out=DeleteCases[out,{6,_,_}]];traceouts=Cases[st,{4,0,_}];If[traceouts==={},,traceoutnums=Transpose[traceouts][[3]];Print["Notice: trace out gate found in the input has been replaced by measurement.  Forgetting the outcome will recover the same operation as the input."];out=DeleteCases[out,{4,0,_}];For[i=1,i<=Length[traceoutnums],i++,out=Insert[out,{4,1,traceoutnums[[i]]},-1]]];out] 
 
-PickRandomCircuitIsometry[qubitsin_, qubitsout_, totcnots_] := 
- Module[{i, out, type, cnots, numcnot = 0, ctrl, targ}, 
-  If[qubitsin > qubitsout, 
-   Throw[StringForm[
-     "PickRandomCircuitIsometry Error: number of input qubits must be \
-smaller than number of output qubits."]]]; 
-  out = Table[{5, 0, j}, {j, 1, qubitsout - qubitsin}]; 
-  out = Join[out, 
-    Table[{3, 2*\[Pi]*RandomReal[], j}, {j, qubitsout - qubitsin + 1, 
-      qubitsout}]]; 
-  out = Join[out, 
-    Table[{2, 2*\[Pi]*RandomReal[], j}, {j, 1, qubitsout}]]; 
-  out = Join[out, 
-    Table[{3, 2*\[Pi]*RandomReal[], j}, {j, 1, qubitsout}]]; 
-  For[i = 1, i <= totcnots, i++, ctrl = 0; targ = 0; 
-   While[ctrl == targ, ctrl = RandomInteger[{1, qubitsout}]; 
-    targ = RandomInteger[{1, qubitsout}]]; 
-   out = Insert[out, {0, ctrl, targ}, -1]; 
-   out = Insert[out, {2, 2*\[Pi]*RandomReal[], ctrl}, -1]; 
-   out = Insert[out, {3, 2*\[Pi]*RandomReal[], ctrl}, -1]; 
-   out = Insert[out, {2, 2*\[Pi]*RandomReal[], targ}, -1]; 
-   out = Insert[out, {1, 2*\[Pi]*RandomReal[], targ}, -1]]; out]
+Options[PickRandomCircuitIsometry]={TotGates->False}
+PickRandomCircuitIsometry[qubitsin_,qubitsout_,totcnots_,OptionsPattern[]]:=Module[{i,out,type,cnots,ctrl,targ}, 
+  If[qubitsin>qubitsout,Throw[StringForm["PickRandomCircuitIsometry Error: number of input qubits must be smaller than number of output qubits."]]];
+  out=Table[{5,0,j},{j,1,qubitsout-qubitsin}];
+  If[OptionValue[TotGates],
+  For[i=1,i<=totcnots,i++,ctrl=0;targ=0;type=RandomInteger[{0, 3}];
+  If[type == 0,While[ctrl==targ,ctrl=RandomInteger[{1,qubitsout}];targ=RandomInteger[{1,qubitsout}]];
+     out=Insert[out,{0,ctrl,targ},-1], out=Insert[out,{type,2*\[Pi]*RandomReal[],RandomInteger[{1,qubitsout}]},-1]]]
+     , 
+  out=Join[out,Table[{3,2*\[Pi]*RandomReal[],j},{j,qubitsout-qubitsin+1,qubitsout}]];
+  out=Join[out,Table[{2,2*\[Pi]*RandomReal[],j},{j,1,qubitsout}]]; 
+  out=Join[out,Table[{3,2*\[Pi]*RandomReal[],j},{j,1,qubitsout}]]; 
+  For[i=1,i<=totcnots,i++,ctrl=0;targ=0; 
+    While[ctrl==targ,ctrl=RandomInteger[{1,qubitsout}];targ=RandomInteger[{1,qubitsout}]];
+    out=Insert[out,{0,ctrl,targ},-1]; 
+    out=Insert[out,{2,2*\[Pi]*RandomReal[],ctrl},-1]; 
+    out=Insert[out,{3,2*\[Pi]*RandomReal[],ctrl},-1]; 
+    out=Insert[out,{2,2*\[Pi]*RandomReal[],targ},-1]; 
+    out=Insert[out,{1,2*\[Pi]*RandomReal[],targ},-1]]];
+out]
    
 (* Commands for conversion to XX and R *)
 
