@@ -580,7 +580,7 @@ testColumnByColumnDec:=Module[{error,v1,v2,v3,vExact1},(
 error=0;
 v1=CreateOperationFromGateList[{Ancilla[0,1],Rx[1,2],CNOT[1,2],Rz[1,1],Rz[1,1]}];
 v2=CreateOperationFromGateList[NGateList[{Ancilla[0,1],Rx[1,3],CNOT[3,1],Rz[1,3],Rz[1,1],CNOT[2,3],Ry[1,1]}]];
-v3=CreateOperationFromGateList[NGateList[{Ancilla[0,1],Ancilla[0,4],Rx[1,3],CNOT[3,1],Rz[2.5,3],Rz[0.7,1],CNOT[2,3],Ry[0.4,1],Rz[0.4,1],{2,\[Pi]/2,2},{3,\[Pi],2},CNOT[2,4]}]];
+v3=CreateOperationFromGateList[NGateList[{Ancilla[0,1],Ancilla[0,4],Rx[1,3],CNOT[3,1],Rz[2.5,3],Rz[0.7,1],CNOT[2,3],Ry[0.4,1],Rz[0.4,1],Ry[\[Pi]/2,2],Rz[\[Pi],2],CNOT[2,4]}]];
 vExact1=CreateOperationFromGateList[{Ancilla[0,1],Rx[Pi/4,2],Rx[Pi/4,1],CNOT[1,2],CNOT[3,2],CNOT[2,3],CNOT[3,1]}];
 If[Quiet[Check[checkColumnByColumnDec[PickRandomIsometry[2^2,2^4]],error=1;False]]&&
 Quiet[Check[checkColumnByColumnDec[PickRandomIsometry[2^3,2^3]],error=2;False]]&&
@@ -629,7 +629,7 @@ testDecIsometry:=Module[{error,v1,v2,v3},(
 error=0;
 v1=CreateOperationFromGateList[{Ancilla[0,1],Rx[Pi,2],CNOT[1,2],Rz[Pi,1],Rz[Pi,1]}];
 v2=CreateOperationFromGateList[NGateList[{Ancilla[0,1],Rx[1,3],CNOT[3,1],Rz[1,3],Rz[1,1],CNOT[2,3],Ry[1,1]}]];
-v3=CreateOperationFromGateList[NGateList[{Ancilla[0,1],Ancilla[0,4],Rx[1,3],CNOT[3,1],Rz[2.5,3],Rz[0.7,1],CNOT[2,3],Ry[0.4,1],Rz[0.4,1],{2,\[Pi]/2,2},{3,\[Pi],2},CNOT[2,4]}]];
+v3=CreateOperationFromGateList[NGateList[{Ancilla[0,1],Ancilla[0,4],Rx[1,3],CNOT[3,1],Rz[2.5,3],Rz[0.7,1],CNOT[2,3],Ry[0.4,1],Rz[0.4,1],Ry[\[Pi]/2,2],Rz[\[Pi],2],CNOT[2,4]}]];
 If[Quiet[Check[checkDecIsometry[PickRandomIsometry[2^2,2^4]],error=1;False]]&&
 Quiet[Check[checkDecIsometry[PickRandomIsometry[2^1,2^2]],error=2;False]]&&
 Quiet[Check[checkDecIsometry[randPermutMat[2^1,2^2]],error=3;False]]&&
@@ -772,14 +772,14 @@ TestBoolean = True;
 state = Transpose[{Flatten[KroneckerProduct[PickRandomPsi[2],PickRandomPsi[2], PickRandomPsi[2]]]}];
 If[checkStatePrep3Qubits[state,0], ,Print["3 qubit state preparation failed on a Class 0 state"]; TestBoolean = False];
 
-state = NCreateIsometryFromListDim[{{5,0,3},{5,0,2},{5,0,1},{3, 0.8, 1},{1, 0.1, 2},{1, 0.8, 3}, {1, 0.4, 1},{2, 0.4, 3}}, 8];
+state = NCreateIsometryFromListDim[{Ancilla[0,3],Ancilla[0,2],Ancilla[0,1],Rz[0.8,1],Rx[0.1,2],Rx[0.8,3],Rx[0.4,1],Ry[0.4, 3]}, 8];
 If[checkStatePrep3Qubits[state,0], ,Print["3 qubit state preparation failed on a Class 0 state"]; TestBoolean = False];
 
 (*class 1*)
 state = Transpose[{Flatten[KroneckerProduct[PickRandomPsi[2],PickRandomPsi[4]]]}];
 If[checkStatePrep3Qubits[state,1], ,Print["3 qubit state preparation failed on a Class 1 state"]; TestBoolean = False];
 
-state = NCreateIsometryFromListDim[{{5,0,3},{5,0,2},{5,0,1},{3, 0.8, 1},{1, 0.1, 2},{1, 0.8, 3},{2, 0.8, 1},{3, 0.1, 2},{0, 1, 2}, {1, 0.4, 1},{2, 0.4, 3},{2, 0.8, 1},{1, 0.1, 2},{1, 0.8, 3}},8];
+state = NCreateIsometryFromListDim[{Ancilla[0,3],Ancilla[0,2],Ancilla[0,1],Rz[0.8,1],Rx[0.1,2],Rx[0.8,3],Ry[0.8,1],Rz[0.1,2],CNOT[1, 2],Rx[0.4,1],Ry[0.4,3],Ry[0.8,1],Rx[0.1,2],Rx[0.8,3]},8];
 If[checkStatePrep3Qubits[state,1], ,Print["3 qubit state preparation failed on a Class 1 state"]; TestBoolean = False];
 
 (*class 2*)
@@ -792,10 +792,10 @@ If[checkStatePrep3Qubits[state,2], ,Print["3 qubit state preparation failed on a
  theta = RandomVariate[UniformDistribution[{0, \[Pi]/2}]];ru = RU[2]; state = Transpose[{Cos[theta] *Flatten[KroneckerProduct[PickRandomPsi[2], PickRandomPsi[2],ru[[All,1]]]]+  Sin[theta]*Flatten[KroneckerProduct[PickRandomPsi[2], PickRandomPsi[2],ru[[All,2]]]]}];
 If[checkStatePrep3Qubits[state,2], ,Print["3 qubit state preparation failed on a Class 2 state, with the orthogonal factors on the third qubit"]; TestBoolean = False];
 
-state = NCreateIsometryFromListDim[{{5,0,3},{5,0,2},{5,0,1},{3, 0.8, 1},{1, 0.1, 2},{1, 0.8, 3},{2, 0.8, 1},{3, 0.1, 2},{0, 1, 2}, {1, 0.4, 2},{2, 0.4, 3},{0, 2, 3},{2, 0.9, 3},{2, 0.8, 1},{1, 0.1, 2},{1, 0.8, 3}},8];
+state = NCreateIsometryFromListDim[{Ancilla[0,3],Ancilla[0,2],Ancilla[0,1],Rz[0.8,1],Rx[0.1,2],Rx[0.8,3],Ry[0.8,1],Rz[0.1,2],CNOT[1,2],Rx[0.4,2],Ry[0.4,3],CNOT[2,3],Ry[0.9,3],Ry[0.8,1],Rx[0.1,2],Rx[0.8,3]},8];
 If[checkStatePrep3Qubits[state,2], ,Print["3 qubit state preparation failed on a Class 2 state"]; TestBoolean = False];
 
-state = NCreateIsometryFromListDim[{{5,0,3},{5,0,2},{5,0,1},{3, 0.8, 1},{1, 0.1, 2},{1, 0.8, 3},{2, 0.8, 1},{3, 0.1, 2},{0, 1, 2}, {1, 0.4, 1},{2, 0.4, 3},{0, 3, 1},{2, 0.8, 1},{1, 0.1, 2},{1, 0.8, 3}},8];
+state = NCreateIsometryFromListDim[{Ancilla[0,3],Ancilla[0,2],Ancilla[0,1],Rz[0.8,1],Rx[0.1,2],Rx[0.8,3],Ry[0.8,1],Rz[0.1,2],CNOT[1, 2],Rx[0.4,1],Ry[0.4,3],CNOT[3,1],Ry[0.8,1],Rx[0.1,2],Rx[0.8,3]},8];
 If[checkStatePrep3Qubits[state,2], ,Print["3 qubit state preparation failed on a Class 2 state"]; TestBoolean = False];
 
 (*class 3*)
