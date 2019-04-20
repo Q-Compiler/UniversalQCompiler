@@ -776,13 +776,13 @@ PrintCircuit[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:= Module[{draw=False
 
 (*----------------------------------------Visualization of cirucits (private)---------------------------------*)
 
-computeGridForm[st_, n_:Null(*,maxGatesPerLine_:Infinity*)]:= Module[{postSelSetectingOps,initializingOps,gate,maxNum,numQubits,gatesOnEachWireSoFar,type, controlOrParameter, target,czType,cnotType,controlWireLength, targetWireLength,controlGate,shortestWire,longestWireLength,blankMustBeLeftBlankGate,blankWhichCanBeOverwrittenGate,minIndex, maxIndex,index,leftMostPositionThatCanBeFilled,overWriteOrAppend,
+computeGridForm[st_, n_:Null(*,maxGatesPerLine_:Infinity*)]:= Module[{xxType,postSelSetectingOps,initializingOps,gate,maxNum,numQubits,gatesOnEachWireSoFar,type, controlOrParameter, target,czType,cnotType,controlWireLength, targetWireLength,controlGate,shortestWire,longestWireLength,blankMustBeLeftBlankGate,blankWhichCanBeOverwrittenGate,minIndex, maxIndex,index,leftMostPositionThatCanBeFilled,overWriteOrAppend,
 positionForNewGate,positionsOfblackMustBeLeftBlankGateOnTarget,positionsOfblackMustBeLeftBlankGateOnControl,diagType,setActingQubits,positionsOfblackMustBeLeftBlankGate,wire},
 (*set some relevant constants*)
 initializingOps={};
 postSelSetectingOps={};
 diagType=-2;
-czType = -1;cnotType = 0; 
+czType = -1;cnotType = 0;xxType = 100; 
 controlGate = "control";
 blankWhichCanBeOverwrittenGate = "blankWhichCanBeOverwritten";
 blankMustBeLeftBlankGate = "mustBeLeftBlank";
@@ -800,9 +800,9 @@ gatesOnEachWireSoFar = ConstantArray[{}, numQubits];
 Do[
 {type, controlOrParameter, target} = gate;
 
-If[type == czType || type == cnotType|| type == diagType,
+If[type == czType || type == cnotType||type == xxType || type == diagType,
 (*Code for multiqubit gates*)
-If[type==diagType,
+If[type==diagType ||type == xxType,
 {minIndex, maxIndex}={Min[target],Max[target]}
 ,
 {minIndex, maxIndex} = If[target < controlOrParameter, {target,controlOrParameter} , {controlOrParameter, target}];
@@ -814,7 +814,7 @@ gatesOnEachWireSoFar[[index]] = PadRightHelp[gatesOnEachWireSoFar[[index]] , pos
 gatesOnEachWireSoFar[[index, positionForNewGate]]  = blankMustBeLeftBlankGate; 
 ];
 (*Fill up all entries where the multi-qubit gate is acting on with "blankMustBeLeftBlankGate" until the current gate in two steps:*)
-If[type==diagType,
+If[type==diagType ||type == xxType,
 setActingQubits=target,
 setActingQubits={controlOrParameter,target}
 ];
@@ -928,15 +928,17 @@ post={Black, Text["<1|", pos+{0.2,0}]}
 ]
 ];
 out=Which[TrueQ[gate == "mustBeLeftBlank"],{},TrueQ[gate == "blankWhichCanBeOverwritten"],{},
-{type, controlOrParameter,target} = gate;TrueQ[(type==0    || type==-1)&& controlOrParameter==-pos[[2]]],
+{type, controlOrParameter,target} = gate;TrueQ[(type==0 ||type==-1)&& controlOrParameter==-pos[[2]]],
 (*Control is recognized (from a gate type 0 or -1)*)
 {Black, Disk[pos, 0.1]},
 type == 1, 
-{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text[If[OptionValue[DrawRotationAngles],ToString[StringForm["Rx(`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]],FormatType->StandardForm],"Rx"], pos]},
+{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text[If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["Rx(`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]]],"Rx"], pos]},
 type == 2,
-{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text[If[OptionValue[DrawRotationAngles],ToString[StringForm["Ry(`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]],FormatType->StandardForm],"Ry"], pos]},
+{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text[If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["Ry(`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]]],"Ry"], pos]},
 type == 3,
-{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text[If[OptionValue[DrawRotationAngles],ToString[StringForm["Rz(`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]],FormatType->StandardForm],"Rz"], pos]},
+{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text[If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["Rz(`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]]],"Rz"], pos]},
+type == 101,
+{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text[If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["R(`1`,`2`)",ScientificForm[controlOrParameter[[1]],OptionValue[Digits]],ScientificForm[controlOrParameter[[2]],OptionValue[Digits]]]],"R"], pos]},
 type == 4,
 If[controlOrParameter==0,
 {White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text["Tr", pos]},
@@ -946,18 +948,24 @@ type == 0,
 {White, EdgeForm[Black], Disk[pos , 0.2], Black, Line[{pos - {0,0.2}, pos + {0,0.2}}] , Line[{pos - {0.2,0}, pos + {0.2,0}}] },
 type == -1,
 {Black, Disk[pos, 0.05]},
-type==-2,
+type==-2 || type== 100,
 If[Min[target]==-pos[[2]],
-(*Draw the whole diagonal gate*)
+(*Draw the whole diagonal or XX gate*)
 If[Max[target]==Min[target],
-{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text["\[CapitalDelta]", pos]},
+{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, If[type == -2,Text["\[CapitalDelta]", pos],Text["XX", pos]]},
 sortTarget=Sort[target];
 (*Draw box for diagonal gate*)
 box={White, EdgeForm[Black], Rectangle[{pos[[1]] -0.2,-sortTarget[[-1]]-0.2},{pos[[1]] +0.2,pos[[2]]+0.2}]};
-(*Text for diag gate*)
+(*Text for diag or XX gate*)
 If[EvenQ[sortTarget[[-1]]-sortTarget[[1]]],
-text={Black, Text[Style["\[CapitalDelta]",FontSize->30], pos+{0,0.5-(sortTarget[[-1]]-sortTarget[[1]])/2.}]},
-text={Black, Text[Style["\[CapitalDelta]",FontSize->30], pos+{0,-(sortTarget[[-1]]-sortTarget[[1]])/2.}]}
+text={Black, Text[If[type == -2,
+If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["\[CapitalDelta](`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]]],"\[CapitalDelta]"],
+If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["XX(`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]]],"XX"]],
+pos+{0,0.5-(sortTarget[[-1]]-sortTarget[[1]])/2.}]},
+text={Black, Text[If[type == -2,
+If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["\[CapitalDelta](`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]]],"\[CapitalDelta]"],
+If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["XX(`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]]],"XX"]],
+pos+{0,-(sortTarget[[-1]]-sortTarget[[1]])/2.}]}
 ];
 (*Do print the wire for the qubits where the diagonal gate is anot cting on*)
 actQubits={};
@@ -1023,12 +1031,26 @@ TrueQ[gate  == "mustBeLeftBlank"], wireType[wire,gateIndex,gridForm],
 TrueQ[gate  == "blankWhichCanBeOverwritten"], wireType[wire,gateIndex,gridForm],
 {type, controlOrParameter,target} = gate;
 type==0, If[wire==target,"\\targ",ToString[StringForm["\\ctrl{``}", target-controlOrParameter]]],
-type == 1, If[OptionValue[DrawRotationAngles],ToString[StringForm["\\gate{R_x(\\textnormal{$`1`$})}",ToString[TeXForm[ScientificForm[controlOrParameter,OptionValue[Digits]]]]],FormatType->StandardForm],"\\gate{R_x}"],
-type ==2, If[OptionValue[DrawRotationAngles],ToString[StringForm["\\gate{R_y(\\textnormal{$`1`$})}",ToString[TeXForm[ScientificForm[controlOrParameter,OptionValue[Digits]]]]],FormatType->StandardForm],"\\gate{R_y}"],
-type ==3, If[OptionValue[DrawRotationAngles],ToString[StringForm["\\gate{R_z(\\textnormal{$`1`$})}",ToString[TeXForm[ScientificForm[controlOrParameter,OptionValue[Digits]]]]],FormatType->StandardForm],"\\gate{R_z}"],
+type == 1, If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["\\gate{R_x(\\textnormal{$`1`$})}",ParamToLatex[controlOrParameter,OptionValue[Digits]]]],"\\gate{R_x}"],
+type ==2, If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["\\gate{R_y(\\textnormal{$`1`$})}",ParamToLatex[controlOrParameter,OptionValue[Digits]]]],"\\gate{R_y}"],
+type ==3, If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["\\gate{R_z(\\textnormal{$`1`$})}",ParamToLatex[controlOrParameter,OptionValue[Digits]]]],"\\gate{R_z}"],
+type == 101, If[OptionValue[DrawRotationAngles],
+ToStringStandard[StringForm["\\gate{R(\\textnormal{$`1`$,$`2`$})}",ParamToLatex[controlOrParameter[[1]],OptionValue[Digits]],ParamToLatex[controlOrParameter[[2]],OptionValue[Digits]]]],
+"\\gate{R}"
+],
 type == 4, "\\meter",
 type == -1, If[wire==target,"\\control \\qw",ToString[StringForm["\\ctrl{``}", target-controlOrParameter]]],
-type == -2, If[wire==Min[target],ToString[StringForm["\\multigate{``}{\\Delta}",Max[target]-Min[target]]], "\\ghost{\\Delta}"]
+type == -2, If[wire==Min[target],ToString[StringForm["\\multigate{``}{\\Delta}",Max[target]-Min[target]]], "\\ghost{\\Delta}"],
+type == 100, If[wire==Min[target],
+If[OptionValue[DrawRotationAngles],
+ToStringStandard[StringForm["\\multigate{`1`}{XX(\\textnormal{$`2`$})}",Max[target]-Min[target],ParamToLatex[controlOrParameter,OptionValue[Digits]]]],
+ToStringStandard[StringForm["\\multigate{``}{XX}",Max[target]-Min[target]]]
+],
+If[OptionValue[DrawRotationAngles],
+ToStringStandard[StringForm["\\ghost{`1`}",ToStringStandard[StringForm["XX(\\textnormal{$`2`$})",Max[target]-Min[target],ParamToLatex[controlOrParameter,OptionValue[Digits]]]]]],
+"\\ghost{XX}"
+]
+]
 ];
 string = StringJoin[string, token, " "];
 ];
@@ -1039,7 +1061,13 @@ string = StringJoin[string, "\n}"];
 Return[string];
 ];
 
-(*Helper method*)
+(*Helper methods*)
+(*Create Strings*)
+ParamToLatex[param_,digits_]:=
+ToString[TeXForm[ScientificForm[param,digits]]];
+
+ToStringStandard[str_]:=ToString[str,FormatType->StandardForm];
+
 wireType[wireIndex_,positionAlongWire_,gridForm_]:=Module[{out,positionMst},
 positionMst=Position[gridForm[[wireIndex,1;;positionAlongWire]],_?(If[Length[#]==0,False,MemberQ[{4},#[[1]]]]&)];
 If[Length[positionMst]==0,
