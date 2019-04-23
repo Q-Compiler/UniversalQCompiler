@@ -911,7 +911,8 @@ AppendTo[edges, vertexName[wire, gateIndex]-> vertexName[wire, gateIndex+1]];
 ];
 (*edges for controls*)
 For[gateIndex = 1, gateIndex <= Length[gridForm[[wire]]], gateIndex++,
-If[Head[gridForm[[wire, gateIndex]]]=== List &&gridForm[[wire, gateIndex]][[1]] <= 0&&
+If[Head[gridForm[[wire, gateIndex]]]=== List && 
+(gridForm[[wire, gateIndex]][[1]]==cnotType||gridForm[[wire, gateIndex]][[1]]==czType)&&
 gridForm[[wire, gateIndex]][[3]]==wire,
 AppendTo[edges, vertexName[wire, gateIndex]->  vertexName[gridForm[[wire, gateIndex]][[2]],gateIndex]];
 ];
