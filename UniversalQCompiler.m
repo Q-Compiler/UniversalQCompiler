@@ -942,13 +942,13 @@ out=Which[TrueQ[gate == "mustBeLeftBlank"],{},TrueQ[gate == "blankWhichCanBeOver
 (*Control is recognized (from a gate type cnotType or czType)*)
 {Black, Disk[pos, 0.1]},
 type == xType, 
-{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text[If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["Rx(`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]]],"Rx"], pos]},
+{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text[If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["Rx(`1`)",DrawCircuitNumberFormat[controlOrParameter,OptionValue[Digits]]]],"Rx"], pos]},
 type == yType,
-{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text[If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["Ry(`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]]],"Ry"], pos]},
+{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text[If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["Ry(`1`)",DrawCircuitNumberFormat[controlOrParameter,OptionValue[Digits]]]],"Ry"], pos]},
 type == zType,
-{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text[If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["Rz(`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]]],"Rz"], pos]},
+{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text[If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["Rz(`1`)",DrawCircuitNumberFormat[controlOrParameter,OptionValue[Digits]]]],"Rz"], pos]},
 type == rType,
-{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text[If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["R(`1`,`2`)",ScientificForm[controlOrParameter[[1]],OptionValue[Digits]],ScientificForm[controlOrParameter[[2]],OptionValue[Digits]]]],"R"], pos]},
+{White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text[If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["R(`1`,`2`)",DrawCircuitNumberFormat[controlOrParameter[[1]],OptionValue[Digits]],DrawCircuitNumberFormat[controlOrParameter[[2]],OptionValue[Digits]]]],"R"], pos]},
 type == measType,
 If[controlOrParameter==0,
 {White, EdgeForm[Black], Rectangle[pos - {0.2,0.2}, pos + {0.2,0.2}], Black, Text["Tr", pos]},
@@ -969,12 +969,12 @@ box={White, EdgeForm[Black], Rectangle[{pos[[1]] -0.2,-sortTarget[[-1]]-0.2},{po
 (*Text for diag or XX gate*)
 If[EvenQ[sortTarget[[-1]]-sortTarget[[1]]],
 text={Black, Text[If[type == diagType,
-If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["\[CapitalDelta](`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]]],"\[CapitalDelta]"],
-If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["XX(`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]]],"XX"]],
+If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["\[CapitalDelta](`1`)",DrawCircuitNumberFormat[controlOrParameter,OptionValue[Digits]]]],"\[CapitalDelta]"],
+If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["XX(`1`)",DrawCircuitNumberFormat[controlOrParameter,OptionValue[Digits]]]],"XX"]],
 pos+{0,0.5-(sortTarget[[-1]]-sortTarget[[1]])/2.}]},
 text={Black, Text[If[type == diagType,
-If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["\[CapitalDelta](`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]]],"\[CapitalDelta]"],
-If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["XX(`1`)",ScientificForm[controlOrParameter,OptionValue[Digits]]]],"XX"]],
+If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["\[CapitalDelta](`1`)",DrawCircuitNumberFormat[controlOrParameter,OptionValue[Digits]]]],"\[CapitalDelta]"],
+If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["XX(`1`)",DrawCircuitNumberFormat[controlOrParameter,OptionValue[Digits]]]],"XX"]],
 pos+{0,-(sortTarget[[-1]]-sortTarget[[1]])/2.}]}
 ];
 (*Do print the wire for the qubits where the diagonal gate is anot cting on*)
@@ -1074,7 +1074,7 @@ Return[string];
 (*Helper methods*)
 (*Create Strings*)
 ParamToLatex[param_,digits_]:=
-ToString[TeXForm[ScientificForm[param,digits]]];
+ToString[TeXForm[DrawCircuitNumberFormat[param,digits]]];
 
 ToStringStandard[str_]:=ToString[str,FormatType->StandardForm];
 
@@ -1090,6 +1090,11 @@ out="\\cw "
 ];
 out
 ]
+
+DrawCircuitNumberFormat[controlOrParameter_,digits_]:=If[Abs[N[controlOrParameter]]>=1000||Abs[N[controlOrParameter]]<0.001,
+ScientificForm[controlOrParameter, digits],
+NumberForm[ controlOrParameter, digits]
+ ]
 
 (*----------------------------------------Matrix decompositions (public)---------------------------------*)
 
