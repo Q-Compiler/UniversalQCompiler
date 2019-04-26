@@ -9,6 +9,7 @@ UniversalQCompiler provides a Mathematica package that allows to decompose gener
 *  Drawing quantum circuits within Mathematica
 *  Exporting quantum circuits to LATEX
 *  Running quantum circuits on the IBM Q Experience (using the OpenQASM converter)
+* Compilation for trapped ions, i.e., converting between gate sequences using CNOT (and single-qubit rotation) to those that use Molmer-Sorensen gates 
 
 A detailed documentation of the Mathematica package can be found on our [webpage](http://www-users.york.ac.uk/~rc973/UniversalQCompiler.html). The notebook Examples.nb helps the user to get started quickly and provides a short overview over the methods provided by UniversalQCompiler.
 
