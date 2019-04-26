@@ -21,7 +21,8 @@ BeginPackage["UniversalQCompiler`",{"QI`"}];
 3. Improve efficiency by removing For-loops and if statements with more efficient alternativs provided by Mathematica (and do not copy (long)lists)
 4. Add ZXZ and XZX decompositions for single-qubit unitaries and use them for simplifying gate sequences 
 (for instance if one of the Zs in ZXZ is actually identity, the X might commute out of a neighbouring target gate)
-5. Implementation of multi-controlled-Toffoli gates using ancillas to lower the C-NOT count.
+5. For a gate sequence st, calling SimplifyGateList[XRGatesToCNOTRotations[CNOTRotationsToXXRGates[st]]] should give us back the same gate sequence st again.
+6. Implementation of multi-controlled-Toffoli gates using ancillas to lower the C-NOT count.
 *)
 
 (*Methods to handle and simplify gate sequence*)
