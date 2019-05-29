@@ -3218,13 +3218,6 @@ out1=KnillDec[u,action,{FullSimp->OptionValue[FullSimp],UseDec->UseDecString}];I
 out1=ColumnByColumnDec[u,action,FullSimp->OptionValue[FullSimp]];If[CNOTCount[out]>=CNOTCount[out1],out=out1];
 ];
 ];
-qBits=Log2[Dimensions[u][[1]]];
-actionQ=
-Switch[action, 
-Null,Range[qBits], 
-_, action
-];
-If[actionQ==Range[qBits],,out=RelabelQubits[out,Range[qBits],actionQ]];
 out
 ]
 
@@ -3248,13 +3241,6 @@ out=ColumnByColumnDec[u,action,{FirstColumn->"StatePreparation",Simp->OptionValu
 ];
 ];
 ];
-qBits=Log2[Dimensions[u][[1]]];
-actionQ=
-Switch[action, 
-Null,Range[qBits], 
-_, action
-];
-If[actionQ==Range[qBits],,out=RelabelQubits[out,Range[qBits],actionQ]];
 out
 ]
 
