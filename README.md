@@ -28,6 +28,9 @@ To use our Mathematica package UniversalQCompiler.m, you need to have installed 
 
 Note that the Makefile is only used for the unstable bindings to Python. You do not need any Makefile for the Mathematica package or the QASM converter.
 
+## Feedback
+We would be very happy for any feedback about UniversalQCompiler. Please do not hesitate to write us a mail (itenr@itp.phys.ethz.ch or roger.colbeck@york.ac.uk) if you have any suggestions for improvements or comments.
+
 ## Please cite
 An overview over the package UniversalQCompiler and some theoretical background about the decomposition methods that it uses can be found on [arXiv:1904.01072](https://arxiv.org/pdf/1904.01072.pdf).
 
