@@ -145,6 +145,10 @@ POVMToIsometry::usage="TBA."
 DecChannelInQCM::usage="TBA."
 DecPOVMInQCM::usage="TBA."
 PrepareForQASM::usage="PrepareForQASM[gatelist] takes a list of gates and prepares it into a form suitable for use with the python script that converts to QASM."
+QRSplit::usage="TBA"
+ReducedCSDSplit::usage="TBA"
+DecChannelRecursively::usage="TBA"
+MeasuredQCM::"TBA"
 
 Begin["`Private`"];
 (*Set debug to True to run additional tests during running the methods.*)
@@ -3726,7 +3730,249 @@ Label[LabelEnd];
 IsListForm[st_,methodName_:"UNKNOWN"]:=Module[{postsel,postselnums,traceout,traceoutnums,measure,measurenums,int1,int2,int3},If[st=={},,If[Length[Dimensions[st]]==1, IsListFormHelp[st,methodName],postsel=Cases[st,{6,_,_}];If[postsel==={},postselnums={},postselnums=Transpose[postsel][[3]]];traceout=Cases[st,{4,0,_}];If[traceout==={},traceoutnums={},traceoutnums=Transpose[traceout][[3]]];measure=Cases[st,{4,1,_}];If[measure==={},measurenums={},measurenums=Transpose[measure][[3]]];int1=Intersection[postselnums,traceoutnums];int2=Intersection[postselnums,measurenums];int3=Intersection[traceoutnums,measurenums];If[int1==={},,Throw[StringJoin["For qubits ",ToString[int1]," appering as an input in method ",methodName ," there is both a postselection and a trace."]]];If[int2==={},,Throw[StringJoin["For qubits ",ToString[int2]," appering as an input in method ",methodName ," there is both a postselection and a measurement."]]];If[int3==={},,Throw[StringJoin["For qubits ",ToString[int3]," appering as an input in method ",methodName ," there is both a trace and a measurement."]]];IsListFormHelp[#,methodName]&/@st]]]
   
 PrepareForQASM[st_]:=Module[{out,traceouts,traceoutnums,i},out=NGateList[st];If[Cases[out,{5,_,_}]==={},,Print["Notice: ancillas found in the input have been removed.  Output gate sequence corresponds to the same operation as the input provided the ancillas in the input sequence start in the correct states."];out=DeleteCases[out,{5,_,_}]];If[Cases[out,{-2,_,_}]==={},,Throw["Error in PrepareForQASM: diagonal gates found in the input, which is not supported by QASM. You may want to decompose them using DecDiagGate[]."];out=DeleteCases[out,{-2,_,_}]];If[Cases[st,{6,_,_}]==={},,Print["Warning: postselection gate found in the input has been removed.  Output gate sequence may not be as intended."];out=DeleteCases[out,{6,_,_}]];traceouts=Cases[st,{4,0,_}];If[traceouts==={},,traceoutnums=Transpose[traceouts][[3]];Print["Notice: trace out gate found in the input has been replaced by measurement.  Forgetting the outcome will recover the same operation as the input."];out=DeleteCases[out,{4,0,_}];For[i=1,i<=Length[traceoutnums],i++,out=Insert[out,{4,1,traceoutnums[[i]]},-1]]];out] 
-  
+
+
+(*Boxi*)
+cgs=100  
+Mmt2[j_,i_]:={7,j,i};
+NOT[i_]:={8,,i};
+Bit[p_,i_]:={9,p,i};
+CTRLST[z_,o_,u_,stList_]:=Module[{},
+If[Length[stList]==2^Length[u],,Throw[StringForm["Invalid use of controlled sequence, Length[stList]\[Equal]Length[u] is not fulfilled"]]];
+Return[{cgs, {z,o,u},stList} ]
+]
+
+(*MeasuredQCM*)
+QRSplit[v_]:=
+(*Input: a rectangular matrix [q1:q2] with an even number of rows;
+  Output: {R,{Q1,Q2}} where R=[R1:R2] is an isometry and V1=Q1*R1, V2=Q2*R2;*)
+Module[{v1, v2,q1,q2,r1,r2},
+If[!EvenQ[Length[v]], Throw[Stringform["The number of rows has to be even for QRSplit."]]];
+{v1,v2} = Partition[v, Length[v]/2];
+{q1,r1} = QRDecomposition[v1];
+{q2,r2} = QRDecomposition[v2];
+Return[{Join[r1,r2],{Transpose[q1],Transpose[q2]}}]
+]
+ReducedCSDSplit[q_, OptionsPattern[EfficientRepresentation->False]] :=
+(*Use reduced CSD decomposition to decompose an isometry [q1:q2] in to q1=u1*c*v and q2=u2*s*v,where c and s are diagonal matrix with entries of the form cos and sin (means that c^2+s^2=I).
+This version works ONLY if q is an isometry with dimention (m,n) where 2m\[LessEqual]n, ortherwise the removal of 0s in s has to be modified.
+
+If EfficientRepresentation->False, it returns three matrix m1,m2,m3 so that m1*m2*m3=[q1:q2]
+If EfficiqentRepresentation->True, it only returns v, a list of diagonal elements c and s and {u1, u2}
+*)
+Module[{n,m, u1,u2,s,c,v,q1,q2,x, r,reducedDim},
+If[!EvenQ[Length[q]], Throw[Stringform["The number of rows has to be even for ReducedCSDSplit."]]];
+{n,m}=Dimensions[q];
+If[2*m>n, Throw[Stringform["The input has to be an isometry with 2m<=n, where m, n are the nunber of columns and rows in the matrix representation."]]];
+
+{q1,q2} = Partition[q, Length[q]/2];
+
+(* calculate reduced u2 and s *)
+{u2,s,v} =  SingularValueDecomposition[q2];
+reducedDim =Dimensions[q1][[2]];
+u2 = u2[[All,1;;reducedDim]]; (* Cut unnecessary columns *)
+s = s[[1;;reducedDim,1;;reducedDim]]; (* Cut zeros *)
+
+(* calculate u1 and c using QR decomposition *)
+x = q1.v;
+{u1,r} = QRDecomposition[x];
+c = DiagonalMatrix[Diagonal[r]];
+u1 = x.Inverse[c];
+v = Transpose[v];
+
+(* output result *)
+If[
+OptionValue[EfficientRepresentation],
+Return[{v,
+MapThread[{{#1,#2},{-#2,#1}}&,{Diagonal[c],Diagonal[s]}],
+{u1,u2}}],
+Return[{
+ArrayFlatten[{{v},{SparseArray[{},{reducedDim,reducedDim}]}}],
+ArrayFlatten[{{c,s},{s,c}}],
+ArrayFlatten[{{u1,0},{0,u2}}]
+}]
+]
+]
+ChooseDecMethod[MethodName_]:=
+Module[{method},
+Switch[
+MethodName,
+"QSD",
+Return[QSD],
+"DecIsometry",
+Return[DecIsometry],
+"DecIsometryGeneric",
+Return[DecIsometryGeneric],
+"ColumnByColumnDec",
+Return[ColumnByColumnDec],
+"KnillDec",
+Return[KnillDec],
+_,
+Throw["The decomposition method "<>MethodName<>" is not found. The available methods are QSD, DecIsometry, DecIsometryGeneric, ColumnByColumnDec and KnillDec."]
+]
+]
+DecChannelRecursively[krausList_,OptionsPattern[{DecomposeIso->"None"}]] :=
+(* Recursively decompose a list of 2^k Kraus operators into an m x n Isometry and two list of Krau operators controlled by the measured result after the isometry; 
+After those gates, the first qubit is to be measured but the measurement gates are not included here;
+The total number of qubis involved is max(m,n)+1;
+
+Input: a list of Kraus operator;
+Output: isometry/st, a list of Kraus operators, a list of Kraus operators;(If the list of Kraus operators is no longer decomposible with QR, it will returns {isometry/st,None,None})\:ff1b
+
+If DecomposeIso\[Rule]"None": Use QRSplit and the isometry is in the matrix representation;
+If DecomposeIso\[Rule]"QSD": Use ReducedCSDSplit and the isometry is give as gate sequence;
+If DecomposeIso\[Rule]"DecIsometryGeneric"/"ColumnByColumnDec"/"DecIsometry"/"KnillDecomposition": Use QRSplit and the isometry is decomposed by the corresponding decomposition methods
+*)
+Module[{k,n,e2n,m,DecMethod,q,v,r,rList,q1,q2,gateSequence},
+e2n = Dimensions[krausList][[2]];
+{k,n,m} = Log2[Dimensions[krausList]];
+If[IntegerQ[k],,Throw[StringForm["The number of Kraus operators is not a power of two."]]];
+If[IntegerQ[m],,Throw[StringForm["The number of rows of the Kraus representation is not a power of two."]]];
+If[IntegerQ[n],,Throw[StringForm["The number of columns of the Kraus representation is not a power of two."]]];
+If[StringQ[OptionValue[DecomposeIso]],,Throw[StringForm["The name of decomposition method is not a string"]]];
+
+q=  Flatten[krausList,1];
+
+(* If the stacked kraus operators is already a m to n isometry with n<=m+1 *)
+If[n+k<=m+1,
+If[OptionValue[DecomposeIso]=="None",
+Return[{q,None,None}],
+DecMethod = ChooseDecMethod[OptionValue[DecomposeIso]];
+Return[{DecMethod[q],None,None}]
+]
+];
+
+(* QR or ReducedCSD Decomposition *)
+If[OptionValue[DecomposeIso]=="QSD",
+
+(* Use ReducedCSDSplit*)
+DecMethod=QSD;
+{v,rList,{q1,q2}}=ReducedCSDSplit[q, EfficientRepresentation->True];
+gateSequence = 
+{Ancilla[0,1],
+CTRLST[{1},{},{},
+{DecMethod[v,action=Range[Max[m,n]-m+2,Max[n,m]+1]]}
+],
+CTRLST[{},{},Range[Max[m,n]-m+2,Max[n,m]+1],
+Map[DecMethod[#,action={1}]&,rList]
+]
+};
+Return[{gateSequence, Partition[q1,e2n],Partition[q2,e2n]}],
+
+(* Use QRSplit*)
+{r,{q1,q2}} = QRSplit[q];
+If[OptionValue[DecomposeIso]=="None",
+Return[{r,Partition[q1,e2n],Partition[q2,e2n]}],  (* Partition transform it to a list of kraus *)
+DecMethod = ChooseDecMethod[OptionValue[DecomposeIso]];
+Return[
+{DecMethod[r, action=Range[1,Max[m,n]+1]],
+Partition[q1,e2n],
+Partition[q2,e2n]
+}]
+]
+]
+]
+MeasuredQCM[krausList_,OptionsPattern[{DecomposeIso->"QSD",DecomposeLastIso->"DecIsometry",DoNotReuseAncilla->False}]]:=
+(*Recursively decompose a list of 2^k Kraus operators into an m x n Isometry and two list of Krau operators controlled by the measured result after the isometry;
+Input: a list of kraus operators {K1,K2,...K_(2^k)};
+Output: {{st[r1]} , {st[r21],st[r22]} , {st[r31],st[r32],st[r33],st[r34]} , ..., {st[q1}, st[q2], ..., st[q_(2^k)]}}, where st[g] is the gate sequence of gate g.
+*)
+Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,rList},
+{k,n,m} = Log2[Dimensions[krausList]]; (* (n,m) size of each kraus operator *)
+If[IntegerQ[k],,Throw[StringForm["The number of Kraus operators is not a power of two."]]];
+If[IntegerQ[m],,Throw[StringForm["The number of rows of the Kraus representation is not a power of two."]]];
+If[IntegerQ[n],,Throw[StringForm["The number of columns of the Kraus representation is not a power of two."]]];
+If[StringQ[OptionValue[DecomposeIso]],,Throw[StringForm["The name of decomposition method is not a string"]]];
+
+(* loopNum = number of iteration with qr decomposition *)
+If[m<n, loopNum = k; l=n-m,loopNum = n+k-m-1;l=1];
+v =  Flatten[krausList,1];
+qList = {v};
+gateSequence = {};
+
+For[i=1,i<=loopNum,i++,
+Which[
+(* Reduced CSD is choosen to do the decomposition *)
+OptionValue[DecomposeIso]=="QSD",
+DecMethod = QSD;
+(* Matrix calculation *)
+SplitResult = Flatten[Map[ReducedCSDSplit[#,EfficientRepresentation->True]&, qList],1];
+(* A list bellow contains all gate sequences multiplex controlled by the first i-1 bits*)
+vList =SplitResult[[1;;-1;;3]];  (* Zero controlled gate v *)
+rList = Flatten[SplitResult[[2;;-1;;3]],1];  (* Matrices with cos and sin elements *)
+qList =  Flatten[SplitResult[[3;;-1;;3]],1]; (* Isometry for the decomposition in the next round*)
+
+(* Append results *)
+Which[
+OptionValue[DoNotReuseAncilla]==False,
+gateSequence=Join[gateSequence,
+{CTRLST[{loopNum+1},{},Range[1,i-1],
+Map[DecMethod[#,action=Range[loopNum+l+1,loopNum+l+m]]&,vList]
+],
+CTRLST[{},{},Join[Range[1,i-1],Range[loopNum+l+1,loopNum+l+m]],
+Map[DecMethod[#,action={loopNum+1}]&,rList]
+],
+Mmt2[i,loopNum+1],
+CTRLST[{},{i},{},
+{{NOT[loopNum+1]}}
+]
+}
+],
+OptionValue[DoNotReuseAncilla]==True,
+gateSequence=Join[gateSequence,
+{CTRLST[{i},{},Range[1,i-1],
+Map[DecMethod[#,action=Range[k+l+1,k+l+m]]&,vList]
+],
+CTRLST[{},{},Join[Range[1,i-1],Range[loopNum+l+1,loopNum+l+m]],
+Map[DecMethod[#,action={i}]&,rList]
+],
+Mmt[i]
+}
+]
+],
+
+(* Other decomposition method is choosen*)
+OptionValue[DecomposeIso]!="CSD",
+DecMethod = ChooseDecMethod[OptionValue[DecomposeIso]];
+(* Matrix calculation *)
+qrSplitResult = Flatten[Map[QRSplit, qList],1];
+rList = qrSplitResult[[1;;-1;;2]];
+qList =  Flatten[qrSplitResult[[2;;-1;;2]],1];
+
+(* Append results *)
+Which[
+OptionValue[DoNotReuseAncilla]==False,
+gateSequence=Join[gateSequence,
+{CTRLST[{},{},Range[1,i-1],
+Map[DecMethod[#,action=Join[{loopNum+1},Range[loopNum+l+1,loopNum+l+m]]]&,rList]
+],
+Mmt2[i,loopNum+1],
+CTRLST[{},{i},{},
+{{NOT[loopNum+1]}}
+]
+}
+],
+OptionValue[DoNotReuseAncilla]==True,
+gateSequence=Join[gateSequence,
+{CTRLST[{},{},Range[1,i-1],
+Map[DecMethod[#,action=Join[{i},Range[loopNum+l+1,loopNum+l+m]]]&,rList]
+],
+Mmt[i]
+}
+]
+]  (* end whether reuse qubit *)
+]   (* end which decomposition *)
+];  (* end for loop *)
+
+DecMethod=ChooseDecMethod[OptionValue[DecomposeLastIso]];
+AppendTo[gateSequence, 
+CTRLST[{},{},Range[1,loopNum],
+Map[DecMethod[#,Range[loopNum+1,loopNum+l+m]]&, qList]
+]
+];
+Return[gateSequence]
+]
+
 End[];
 
 EndPackage[]
