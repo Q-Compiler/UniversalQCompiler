@@ -3988,7 +3988,103 @@ Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,r
   Return[gateSequence]
 ]
 
+(*###########################################################################*)
+(*CreateOperationFromGateList*)
 
+FindUsedQubits[st_]:= Module[{QubitsLabel},
+  If[
+    st=={},
+    QubitsLabel={},
+    QubitsLabel=Map[
+      If[#[[1]] == -2 || #[[1]] == -1 || #[[1]] == 0, 
+        {#[[2]], #[[3]]},
+        #[[3]]
+      ]&,
+    st
+    ]
+  ];
+  Sort @ DeleteDuplicates @ Flatten[QubitsLabel]
+]
+
+(*Remove unused qubits in st qubits{2,5,1}->qubits{2,3,1}*)
+RemoveUnusedQubits[st_] := Module[{oldQubitsLabel, newQubitsLabel, asso},
+  If[
+    Not[MemberQ[Range[-2, 6], #[[1]]]] & @@ st,
+    Throw[StringForm["Gate type not implemented in RemoveUnusedQubits"]],
+  ];
+  oldQubitsLabel=FindUsedQubits[st];
+  newQubitsLabel=Range[Length[oldQubitsLabel]];
+  asso=AssociationThread[oldQubitsLabel -> newQubitsLabel];
+  Map[
+    If[#[[1]] == -2 || #[[1]] == -1 || #[[1]] == 0, 
+      {#[[1]], #[[2]]/.asso, #[[3]]/.asso},
+      {#[[1]], #[[2]], #[[3]]/.asso}
+    ]&, st
+  ]
+]
+
+(*Create a compact isometry with all not used qubits neglected.*)
+CreateCompactIsometryFromList[st_] := Module[{},
+  Return[CreateIsometryFromList[RemoveUnusedQubits[st]]];
+]
+
+(*If the gate is cgs gate, this function maps all the gate in to a gate list to perform some validity check like NumberOfQubits*)
+ToSimpleGate[st_] := Module[{},
+  Flatten[
+    Map[
+      (If[#[[1]]==cgs,
+      Flatten[#[[3]],1], 
+      {#}]
+      )&,  (*This function acts on each gate in the st*)
+    st],
+  1]
+]
+
+(*Each gate matrix must be a m to n qubits isometry of the same size with m<n
+The order of the elements in controls must be consistent with the order of the gate matrices
+Input:
+ucg: {gates, controls, isoTargets, numQubits}, where gates is a list of isometry, controls and isoTargets are lists of qubits indices and numQubits is the total number of qubits.
+mat: a two dimensional matrix, can be a state or operator
+*)
+ApplyControl[ucg_, mat_] := 
+ Module[{gates, controls, isoTargets, numQubits, ids,m,targetMats,gateMats,newOrder, mat2, matlist, mat3},
+  {gates, controls, isoTargets, numQubits} = ucg;
+  {n,m} = Log2[Dimensions[gates[[1]]]];
+  (*Validity check*)
+  If[
+    Max[controls, isoTargets]>numQubits,
+    Throw[StringForm["The numQubits number must be larger than the elements in controls and isoTargets"]],
+  ];
+  If[n<m, 
+    Throw[StringForm["The program only works for m to n qubits isometry with n>m"]],
+  ];
+  ids = Complement[Range @ numQubits, controls, isoTargets];
+  (*Find new order and check duplication: new order is that the most significant qubits control and the most insignificant qubits are controlled*)
+  newOrder = Flatten[{controls, ids, isoTargets}];
+  If[Length @ Part[Select[Tally @ newOrder, Part[#, 2] > 1 &], All, 1]>0,
+    Throw[StringForm["There is duplication of the qubits indices in controls and isoTargets."]],
+  ];
+  (*Permute the rows of mat, here is a trick, I don't know how to make ExchangeSystems work for isometry-like matrix, so I use Partition to make it "looks like" a state*)
+  mat2 = Flatten[#, 1]& @ ExchangeSystems[Partition[mat, 1], newOrder, 
+ ConstantArray[2, Length[newOrder]]];
+  (*If n>m （isometry), many entries can be neglected*)
+  targetMats = Take[Partition[mat, 2^m], ;; ;;2^(n-m)]; (*only m<n*)
+  (*copy the gate matrix 2^Length[ids] times, where ids are the qubits don't belong to targets or controls*)
+  gateMats = Flatten[ConstantArray[#, 2^(Length@ids)] & /@ gates ,1];
+  (*Mutiply two list of matrices*)
+  matlist = Flatten[MapThread[(#1.#2) &, {gateMats, targetMats}],1];
+  (*Permute the rows back to the ord order*)
+  mat3 = Flatten[#, 1]& @ ExchangeSystems[Partition[matlist, 1], newOrder, 
+ ConstantArray[2, Length[newOrder]]];
+  Return[mat3];
+]
+
+CTRLSTM[controls_,stList_, numQubits_, mat_]:=Module[{zeroControls,oneControls,multiControls, gates, isoTargets},
+  {zeroControls,oneControls,multiControls}=controls;
+  gates = CreateCompactIsometryFromList[#] & /@ stList;
+  isoTargets = DeleteDuplicates @ Flatten[FindUsedQubits /@ stList];
+  ApplyControl[{gates, multiControls, isoTargets, numQubits}, mat]
+]
 
 End[];
 
