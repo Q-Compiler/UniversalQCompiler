@@ -23,6 +23,18 @@ BeginPackage["UniversalQCompiler`",{"QI`"}];
 (for instance if one of the Zs in ZXZ is actually identity, the X might commute out of a neighbouring target gate)
 5. Create code for transforming gate sequences consisting of C-NOT and single-qubit gates into ones consisting of MS gates and single qubit rotations adapted for trapped ions.
 6. Implementation of multi-controlled-Toffoli gates using ancillas to lower the C-NOT count.
+7. [Raban] Extend Stateprepration scheme for small Schmidt rank
+*)
+(*ToFix:
+1. XYXDec can return a ZYZ output, e.g. for
+
+{{0.7065332001434155` + 0.01331469739672239` I,
+ 0.4888081996161278` -
+  0.5115663201544624` I}, {0.5440477104845266` -
+  0.45237776762887333` I, -0.03542548508468498` +
+  0.7057701318971897` I}}
+
+This seems to be due to the Simp->True default option; running with Simp->False gives the expected behaviour. 
 *)
 
 (*Methods to handle and simplify gate sequence*)
