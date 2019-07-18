@@ -18,11 +18,21 @@ BeginPackage["UniversalQCompiler`",{"QI`"}];
 (*ToDos:
 1. Add "do not simplify" option to methods, which allows to work with fixed circuit topologies.
 2. Clear up unncessesary applications of Reverse[] (restructure the code to make it more redable)
-3. Improve efficiency by removing For-loops and if statements with more efficient alternativs provided by Mathematica (and do not copy (long)lists)
-4. Add ZXZ and XZX decompositions for single-qubit unitaries and use them for simplifying gate sequences 
+3. Improve efficiency by removing For-loops and if statements with more efficient alternatives provided by Mathematica (and do not copy (long)lists)
+4. Use ZXZ and XZX decompositions for single-qubit unitaries to simplify gate sequences 
 (for instance if one of the Zs in ZXZ is actually identity, the X might commute out of a neighbouring target gate)
 5. For a gate sequence st, calling SimplifyGateList[XRGatesToCNOTRotations[CNOTRotationsToXXRGates[st]]] should give us back the same gate sequence st again.
 6. Implementation of multi-controlled-Toffoli gates using ancillas to lower the C-NOT count.
+7. [Raban] Extend Stateprepration scheme for small Schmidt rank
+*)
+(*ToFix:
+1. XYXDec can return a ZYZ output, e.g. for
+{{0.7065332001434155` + 0.01331469739672239` I,
+ 0.4888081996161278` -
+  0.5115663201544624` I}, {0.5440477104845266` -
+  0.45237776762887333` I, -0.03542548508468498` +
+  0.7057701318971897` I}}
+This seems to be due to the Simp->True default option; running with Simp->False gives the expected behaviour. 
 *)
 
 (*Methods to handle and simplify gate sequence*)
@@ -92,13 +102,21 @@ UnitaryEigenvalueDecomp::usage="TBA."
 IsoToUnitarySpecial::usage="IsoToUnitarySpecial[v] extends the isometry v to a unitary such that the unitary has as many eigenvalues equal to 1 as possible."
 (*Matrix decomposition*)
 ZYZDecomposition::usage="ZYZDecomposition[u] for an single-qubit unitary u, returns {a,b,c,d} such that u=e^{i d}.R_z(c).R_y(b).R_z(a)."
+ZXZDecomposition::usage="ZXZDecomposition[u] for an single-qubit unitary u, returns {a,b,c,d} such that u=e^{i d}.R_z(c).R_x(b).R_z(a)."
 XYXDecomposition::usage="XYXDecomposition[u] for an single-qubit unitary u, returns {a,b,c,d} such that u=e^{i d}.R_x(c).R_y(b).R_x(a)."
+XZXDecomposition::usage="XZXDecomposition[u] for an single-qubit unitary u, returns {a,b,c,d} such that u=e^{i d}.R_x(c).R_z(b).R_x(a)."
+YXYDecomposition::usage="YXYDecomposition[u] for an single-qubit unitary u, returns {a,b,c,d} such that u=e^{i d}.R_y(c).R_x(b).R_y(a)."
+YZYDecomposition::usage="YZYDecomposition[u] for an single-qubit unitary u, returns {a,b,c,d} such that u=e^{i d}.R_y(c).R_z(b).R_y(a)."
 RQDecomposition::usage="RQDecomposition[m] for a square matrix m returns {r,q}, where r is an upper triangular matrix and q is an orthogonal/unitary matrix such that r.ConjugateTranspose[q] = m."
 QLDecomposition::usage="QLDecomposition[m] for a square matrix m returns {q,l}, where l is a lower triangular matrix and q is an orthogonal/unitary matrix such that ConjugateTranspose[q].l = m."
 CSD::usage="CSD[u] returns {m1,m2,m3}, the Cosine-Sine decomposition of u, i.e., u=m1.m2.m3."
 (*Decompositions for single-qubit gates*)
 ZYZDec::usage="ZYZDec[u,(action)] for an single-qubit unitary u acting on qubit action (default: action=1), returns the ZYZ decompostition in list form."
+ZXZDec::usage="ZXZDec[u,(action)] for an single-qubit unitary u acting on qubit action (default: action=1), returns the ZXZ decompostition in list form."
 XYXDec::usage="XYXDec[u,(action)] for an single-qubit unitary u acting on qubit action (default: action=1), returns the XYX decompostition in list form."
+XZXDec::usage="XZXDec[u,(action)] for an single-qubit unitary u acting on qubit action (default: action=1), returns the XZX decompostition in list form."
+YXYDec::usage="YXYDec[u,(action)] for an single-qubit unitary u acting on qubit action (default: action=1), returns the YXY decompostition in list form."
+YZYDec::usage="YZYDec[u,(action)] for an single-qubit unitary u acting on qubit action (default: action=1), returns the YZY decompostition in list form."
 (*Uniformly controlled rotations*)
 DecUCY::usage="See the documentation."
 DecUCZ::usage="See the documentation."
@@ -156,6 +174,17 @@ ReplaceCNOTWithXX::usage="ReplaceCNOTWithXX[st] takes a gate list and replaces a
 ReplaceXXWithCNOT::usage="ReplaceXXWithCNOT[st] takes a gate list and replaces all XX gates with CNOTs and additional single qubit rotations."
 CNOTRotationsToXXRGates::usage="CNOTRotationsToXXRGates[st] takes a gate list and replaces all CNOT and single-qubit rotations by XX and R gates."
 XXRGatesToCNOTRotations::usage="XXRGatesToCNOTRotations[st] takes a gate list and replaces all XX and R gates with CNOTs and single-qubit rotations."
+PickRandomInstrument::usage="PickRandomInstrument[dim1, dim2, nChan, nKraus] chooses a random instrument from dimension dim1 to dim2 containing num1 channels, each containing num2 Kraus operators.
+  If nKraus = {nMin, nMax} is a list of two elements, each channel contains a random number n of Kraus operators such that nMin <= n <= nMax (uniform probability).
+  If nKraus = {...} is a list of three or more elements, each channel contains a random number n of Kraus operators such that n is in nKraus (uniform probability)."
+RPickRandomInstrument::usage="RPickRandomInstrument[dim1, dim2, nChan, nKraus] behaves as PickRandomInstrument but gives real output."
+FPickRandomInstrument::usage="FPickRandomInstrument[dim1, dim2, nChan, nKraus] behaves as PickRandomInstrument but gives rational output."
+IsoFromInstrument::usage="IsoFromInstrument[instr, (actionAndAncilla)] constructs an isometry from instrument instr, which corresponds to the action of the instrument on a wider system, before tracing out and measuring ancilla qubits.
+  Returns the isometry and the number of ancilla qubits used."
+DecInstrumentInQCM::usage="DecInstrumentInQCM[instr, (actionAndAncilla)] decomposes instrument instr from m to n qubits into a sequence of gates using the decomposition scheme that achieves the lowest known C-NOT count.
+  The instrument uses q ancilla qubits whose numbers are given in the list actionAndAncilla[[1]] (default : range[q]), with q the maximum number of Kraus operators of a channel,
+  and it acts on the n qubits whose numbers are given in the list actionAndAncilla[[2]] (default: action=Range[q+1,q+n])."
+NearbyIsometry::usage="NearbyIsometry[iso] uses the singular value decomposition to generate an isometry near to iso."
 
 Begin["`Private`"];
 
@@ -1250,6 +1279,7 @@ u
 ]
 )]
 
+
 (*For a 2 x 2 unitary matrix, returns the angles a,b,c,d such that 
 u=Exp[ia]*Rz[b].Ry[c].Rz[d]
 [The method is based on ZYZDecomposition[]]*)
@@ -1258,6 +1288,30 @@ Module[{basisTrans,uPrime}, (
 basisTrans=RotGate[-Pi/2,yType];
 uPrime=Simplify[ConjugateTranspose[basisTrans].u.basisTrans];
 ZYZDecomposition[uPrime]
+)]
+
+ZXZDecomposition[u_] := Module[{basisTrans,uPrime}, (
+  basisTrans=RotGate[Pi/2,zType];
+  uPrime=Simplify[ConjugateTranspose[basisTrans].u.basisTrans];
+  ZYZDecomposition[uPrime]
+)]
+
+XZXDecomposition[u_] := Module[{basisTrans,uPrime}, (
+  basisTrans=RotGate[-Pi/2,xType];
+  uPrime=Simplify[ConjugateTranspose[basisTrans].u.basisTrans];
+  XYXDecomposition[uPrime]
+)]
+
+YXYDecomposition[u_] := Module[{basisTrans,uPrime}, (
+  basisTrans=RotGate[Pi/2,xType];
+  uPrime=Simplify[ConjugateTranspose[basisTrans].u.basisTrans];
+  ZXZDecomposition[uPrime]
+)]
+
+YZYDecomposition[u_] := Module[{basisTrans,uPrime}, (
+  basisTrans=RotGate[-Pi/2,zType];
+  uPrime=Simplify[ConjugateTranspose[basisTrans].u.basisTrans];
+  XZXDecomposition[uPrime]
 )]
 
 (*For a 2 x 2 unitary matrix acting on qubit action, returns the ZYZ decomposition in list form*)
@@ -1281,8 +1335,6 @@ Reverse[st]
 
 (*For a 2 x 2 unitary matrix acting on qubit action, returns the XYX decomposition in list form*)
 Options[XYXDec]={Simp->True};
-(*Except[_?OptionQ] is a trick to allow for optional arguments (together with options). Without this trick, having something like f[x_,y:Null,OptionsPattern[]]:=...
-would give an error calling f[x,option\[Rule]optionValue]*)
 XYXDec[u_,action:Except[_?OptionQ]:Null,OptionsPattern[]] :=Module[{st,angles,actionQ}, (
 IsQubitIsometry[u,"XYXDec"];
 angles=XYXDecomposition[u];
@@ -1297,6 +1349,68 @@ st=SimplifyGateListReverseGateOrder[st]
 Reverse[st]
 )
 ]
+
+Options[ZXZDec]={Simp->True};
+ZXZDec[u_,action:Except[_?OptionQ]:Null,OptionsPattern[]] := Module[{st,angles,actionQ}, (
+  IsQubitIsometry[u,"ZXZDec"];
+  angles=ZXZDecomposition[u];
+  Switch[action,
+    Null,actionQ=1,
+    _,actionQ=action
+  ];
+  st={{zType,angles[[3]],actionQ},{xType,angles[[2]],actionQ},{zType,angles[[1]],actionQ}};
+  (*If[OptionValue[Simp],
+    st=SimplifyGateListReverseGateOrder[st]
+  ];*)(*This simplification makes the decomposition to become a ZYZ instead...*)
+  Reverse[st]
+)]
+
+Options[XZXDec]={Simp->True};
+XZXDec[u_,action:Except[_?OptionQ]:Null,OptionsPattern[]] := Module[{st,angles,actionQ}, (
+  IsQubitIsometry[u,"ZXZDec"];
+  angles=XZXDecomposition[u];
+  Switch[action,
+    Null,actionQ=1,
+    _,actionQ=action
+  ];
+  st={{xType,angles[[3]],actionQ},{zType,angles[[2]],actionQ},{xType,angles[[1]],actionQ}};
+  (*If[OptionValue[Simp],
+    st=SimplifyGateListReverseGateOrder[st]
+  ];*)(*This simplification makes the decomposition to become a ZYZ instead...*)
+  Reverse[st]
+)]
+
+Options[YXYDec]={Simp->True};
+YXYDec[u_,action:Except[_?OptionQ]:Null,OptionsPattern[]] := Module[{st,angles,actionQ}, (
+  IsQubitIsometry[u,"ZXZDec"];
+  angles=YXYDecomposition[u];
+  Switch[action,
+    Null,actionQ=1,
+    _,actionQ=action
+  ];
+  st={{yType,angles[[3]],actionQ},{xType,angles[[2]],actionQ},{yType,angles[[1]],actionQ}};
+  (*If[OptionValue[Simp],
+    st=SimplifyGateListReverseGateOrder[st]
+  ];*)(*This simplification makes the decomposition to become a ZYZ instead...*)
+  Reverse[st]
+)]
+
+Options[YZYDec]={Simp->True};
+YZYDec[u_,action:Except[_?OptionQ]:Null,OptionsPattern[]] := Module[{st,angles,actionQ}, (
+  IsQubitIsometry[u,"ZXZDec"];
+  angles=YZYDecomposition[u];
+  Switch[action,
+    Null,actionQ=1,
+    _,actionQ=action
+  ];
+  st={{yType,angles[[3]],actionQ},{zType,angles[[2]],actionQ},{yType,angles[[1]],actionQ}};
+  (*If[OptionValue[Simp],
+    st=SimplifyGateListReverseGateOrder[st]
+  ];*)(*This simplification makes the decomposition to become a ZYZ instead...*)
+  Reverse[st]
+)]
+
+
 
 (*----------------------------------------Decomposition of uniformly controlled rotation gates (public)----------------------------------------*)
 
@@ -3833,7 +3947,7 @@ IsListForm[st_,methodName_:"UNKNOWN"]:=Module[{postsel,postselnums,traceout,trac
   
 PrepareForQASM[st_]:=Module[{out,traceouts,traceoutnums,i},out=NGateList[st];If[Cases[out,{ancillaType,_,_}]==={},,Print["Notice: ancillas found in the input have been removed.  Output gate sequence corresponds to the same operation as the input provided the ancillas in the input sequence start in the correct states."];out=DeleteCases[out,{ancillaType,_,_}]];If[Cases[out,{diagType,_,_}]==={},,Throw["Error in PrepareForQASM: diagonal gates found in the input, which is not supported by QASM. You may want to decompose them using DecDiagGate[]."];out=DeleteCases[out,{diagType,_,_}]];If[Cases[st,{postselType,_,_}]==={},,Print["Warning: postselection gate found in the input has been removed.  Output gate sequence may not be as intended."];out=DeleteCases[out,{postselType,_,_}]];traceouts=Cases[st,{measType,0,_}];If[traceouts==={},,traceoutnums=Transpose[traceouts][[3]];Print["Notice: trace out gate found in the input has been replaced by measurement.  Forgetting the outcome will recover the same operation as the input."];out=DeleteCases[out,{measType,0,_}];For[i=1,i<=Length[traceoutnums],i++,out=Insert[out,{measType,1,traceoutnums[[i]]},-1]]];out] 
 
-Options[PickRandomCircuitIsometry]={TotGates->False}
+Options[PickRandomCircuitIsometry]={TotGates->False};
 PickRandomCircuitIsometry[qubitsin_,qubitsout_,totcnots_,OptionsPattern[]]:=Module[{i,out,type,cnots,ctrl,targ}, 
   If[qubitsin>qubitsout,Throw[StringForm["PickRandomCircuitIsometry Error: number of input qubits must be smaller than number of output qubits."]]];
   out=Table[{ancillaType,0,j},{j,1,qubitsout-qubitsin}];
@@ -3937,7 +4051,157 @@ Join[ancillain,out]]
 CNOTRotationsToXXRGates[st_]:=Module[{out},out=ReplaceCNOTWithXX[st];out=ReplaceRotationsWithRGatesAfterXX[out];ReplaceInitialRotationsByRGates[out]]
 
 XXRGatesToCNOTRotations[st_]:=Module[{out},out=ReplaceXXWithCNOT[st];out=ReplaceRGatesWithRotations[out];SimplifyGateList[out]]          
+
           
+(* Instruments *)
+(* arguments are input dimension, output dimension, number of channels and number of Kraus operators in each channel *)
+(* If nKraus is given as a list, this is the number of Kraus operators for each channel for *)
+
+PickRandomInstrument[dimA_, dimB_, nChan_, nKraus_] := Module[{i,iso, opList={}, chanList = {}, totOp, nbOps, currentOp},
+  (*find number of random operators to create for each channel and the total number of operators to generate*)
+ Switch[nKraus,
+            _Integer, nbOps = Table[nKraus,{x,1,nChan}],
+_,nbOps=nKraus
+    ];
+    totOp=Tr[nbOps];
+    (*create random operators summing to Identity*)
+  iso = PickRandomIsometry[dimA, dimB*totOp];
+  For[i=1, i<= totOp, i++,
+    opList = Insert[opList, ((IdentityMatrix[dimB]\[CircleTimes]BraV[i-1,totOp]).iso),-1]];
+  currentOp = 1;
+  (*partition random operators created above into separate channels*)
+  For[i=1, i <= nChan, i++,
+    chanList = Insert[chanList, opList[[currentOp;;currentOp + nbOps[[i]]-1]], -1];
+    currentOp += nbOps[[i]];
+  ];
+  chanList
+]    
+                                  
+ RPickRandomInstrument[dimA_, dimB_, nChan_, nKraus_] := Module[{i,iso, opList={}, chanList = {}, totOp, nbOps, currentOp},
+  (*find number of random operators to create for each channel and the total number of operators to generate*)
+ Switch[nKraus,
+            _Integer, nbOps = Table[nKraus,{x,1,nChan}],
+_,nbOps=nKraus
+    ];
+    totOp=Tr[nbOps];
+    (*create random operators summing to Identity*)
+  iso = RPickRandomIsometry[dimA, dimB*totOp];
+  For[i=1, i<= totOp, i++,
+    opList = Insert[opList, ((IdentityMatrix[dimB]\[CircleTimes]BraV[i-1,totOp]).iso),-1]];
+  currentOp = 1;
+  (*partition random operators created above into separate channels*)
+  For[i=1, i <= nChan, i++,
+    chanList = Insert[chanList, opList[[currentOp;;currentOp + nbOps[[i]]-1]], -1];
+    currentOp += nbOps[[i]];
+  ];
+  chanList
+]    
+                                  
+ FPickRandomInstrument[dimA_, dimB_, nChan_, nKraus_, prec_] := Module[{i,iso, opList={}, chanList = {}, totOp, nbOps, currentOp},
+  (*find number of random operators to create for each channel and the total number of operators to generate*)
+ Switch[nKraus,
+            _Integer, nbOps = Table[nKraus,{x,1,nChan}],
+_,nbOps=nKraus
+    ];
+    totOp=Tr[nbOps];
+    (*create random operators summing to Identity*)
+  iso = FPickRandomIsometry[dimA, dimB*totOp,prec];
+  For[i=1, i<= totOp, i++,
+    opList = Insert[opList, ((IdentityMatrix[dimB]\[CircleTimes]BraV[i-1,totOp]).iso),-1]];
+  currentOp = 1;
+  (*partition random operators created above into separate channels*)
+  For[i=1, i <= nChan, i++,
+    chanList = Insert[chanList, opList[[currentOp;;currentOp + nbOps[[i]]-1]], -1];
+    currentOp += nbOps[[i]];
+  ];
+  chanList
+]    
+
+  (* --- Instrument Decomposition core functions --- *)
+
+(* Takes in an instrument (specified in terms of a list of lists of Kraus operators)
+and returns (iso,anc) where iso is an isometry and anc is the number of qubit ancilla
+that need to be traced out to recover the original instrument, after measurement. *)
+Options[IsoFromInstrument] = {TryToCompress->True};
+IsoFromInstrument[instr_, OptionsPattern[]] := Module[{i, j, out, n, anc, instr2 = instr, dimA, dimB},
+  dimA = Length[instr2[[1]][[1]]];
+  dimB = Length[instr2[[1]][[1]][[1]]];
+  If[OptionValue[TryToCompress],
+    For[i=1, i<= Length[instr], i++,
+      instr2[[i]] = MinimizeKrausRank[instr2[[i]]]],
+    (*If false, nothing to do*),
+    Throw[StringForm["Error: If condition checking 'OptionValue[TryToCompress]' in IsoFromInstrument did neither return True nor False"]]
+  ];
+  n = Max[Table[Dimensions[instr2[[i]]][[1]], {i, 1, Length[instr2]}]];
+  (*complete channels with Zero matrices to have channels of unique size and deduce number of ancilla qubits needed*)
+  For[i=1, i<= Length[instr2], i++,
+    For [j=Length[instr2[[i]]], j < n, j++,
+      instr2[[i]] = Insert[instr2[[i]], ConstantArray[0,{dimA, dimB}], -1]]];
+  anc = Ceiling[Log[2, Dimensions[instr2[[1]]][[1]]]];
+  (*build isometry*)
+  {Sum[
+    Sum[
+      KroneckerProduct[
+        KroneckerProduct[
+          Transpose[{UnitVector[2^Ceiling[Log[2,Length[instr]]], i]}],
+          Transpose[{UnitVector[2^anc, j]}]],
+        instr2[[i]][[j]]],
+      {j, 1, Length[instr2[[i]]]}],
+    {i, 1, Length[instr2]}],
+  anc}
+]
+
+(* Takes in an instrument (specified in terms of a list of lists of Kraus operators)
+and returns a gate sequence (including tracing out operations and measurement operations at the end of the circuit)
+in list format that implements the instrument.*)
+Options[DecInstrumentInQCM] = {TryToCompress->True,DecomposeIso->"DecIsometry",Simp->False,FirstColumn->"UCG",FullSimp->True};
+DecInstrumentInQCM[instr_, actionAndAncilla:Except[_?OptionQ]:Null, OptionsPattern[]] :=
+  Module[{anc, iso, st, st1, msr, n, actionQ, ancillaQ, aQ},
+  {iso, anc} = IsoFromInstrument[instr, TryToCompress->OptionValue[TryToCompress]];
+  Switch[OptionValue[DecomposeIso],
+    "DecIsometry",st=DecIsometry[iso,FullSimp->OptionValue[FullSimp]],
+    "DecIsometryGeneric",st=DecIsometryGeneric[iso,Null,{Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}],
+    "QSD",st=QSD[iso,Null,{Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}],
+    "ColumnByColumnDec",st=ColumnByColumnDec[iso,Null,{Simp->OptionValue[Simp],FirstColumn->OptionValue[FirstColumn],FullSimp->OptionValue[FullSimp]}],
+    "KnillDec",st=KnillDec[iso,Null,{Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}],
+    _,Throw[StringForm["An unknown decomposition was provided as option value for DecomposeIso."]]
+  ];
+  (*trace out and measure qubits*)
+  msr = Ceiling[Log[2,Length[instr]]];
+  st1=Table[{measType,1,a},{a,Range[msr]}];
+  st=Join[st,st1];
+  st1=Table[{measType,0,a},{a, msr+1, msr+ anc}]; (*all channels have the same number of ancilla bits : sizes have been completed with Zero matrices*)
+  st=Join[st,st1];
+  (*relabel qubits*)
+  n=Log2[Dimensions[iso][[1]]];
+  ancillaQ=Switch[actionAndAncilla,
+    Null,Range[anc],
+    _, aQ=actionAndAncilla[[1]];
+      If[Length[aQ]>anc,aQ=Delete[aQ,Transpose[{Range[anc+1,Length[aQ]]}]]];
+      aQ
+  ];
+  actionQ=Switch[actionAndAncilla,
+    Null,anc+Range[n-anc],
+    _, actionAndAncilla[[2]]
+  ];
+  Switch[actionAndAncilla,
+    Null,(*no relabeling required*),
+    _,st = RelabelQubits[st,Range[n],Join[ancillaQ,actionQ]]
+  ];
+
+  st
+]
+
+NearbyIsometry[iso_] := Module[{i,u,v,w},
+  {u,w,v} = SingularValueDecomposition[iso];
+   For[i=1, i<= Length[w[[1]]], i++,
+    w[[i]][[i]] = 1];
+  u.w.CT[v]
+]
+
+
+   
+                                       
 End[];
 
 EndPackage[]
