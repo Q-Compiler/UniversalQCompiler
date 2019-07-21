@@ -153,6 +153,7 @@ CTRLSTM::usage="TBA"
 RemoveUnusedQubits::usage="TBA"
 CreateCompactIsometryFromList::usage="TBA"
 ApplyControl::usage="TBA"
+BoxiTest::usage="temp"
 
 Begin["`Private`"];
 (*Set debug to True to run additional tests during running the methods.*)
@@ -267,17 +268,31 @@ GateTypes[]:=Module[{},Print["Gate types for UniversalQCompiler"];Print["{-2,dia
 
 (*Transforms a list in list format to a list containing the corresponding matrices*)
 ListFormToOp[list_,n_:Null]:=Module[{numQubits=n},
-IsListForm[list,"ListFormToOp"];
-If[n==Null,numQubits=If[Dimensions[list]=={3},NumberOfQubits[{list}],NumberOfQubits[list]]];If[Dimensions[list]=={3},
-Which[
-MemberQ[{1,2,3},list[[1]]],RotGateM[list[[2]],list[[1]],list[[3]],numQubits],
-list[[1]]==0,CNOTM[list[[2]],list[[3]],numQubits],
-list[[1]]==-1,CZM[list[[2]],list[[3]],numQubits],
-list[[1]]==-2,If[Dimensions[list[[2]]]!= {},DiagMat[list[[2]],list[[3]],numQubits],Throw[StringForm["Unspecified diagonal gate cannot be represented as a matrix using ListFormToOp[]"]]],
-list[[1]]==4,Throw[StringForm["Measurements/Trace cannot be represented by matrices using ListFormToOp[]"]],
-(*Boxi TODO: Add here new gate handling*)
-MemberQ[{5,6},list[[1]]],Throw[StringForm["Starting in |0> or postselection cannot be represented by matrices using ListFormToOp[]"]]
-],ListFormToOp[#,numQubits]&/@list]]
+  IsListForm[list,"ListFormToOp"];
+  If[n==Null,
+    numQubits=If[Dimensions[list]=={3},
+      NumberOfQubits[{list}],
+      NumberOfQubits[list]
+    ]
+  ];
+  If[Dimensions[list]=={3},
+    Which[
+      MemberQ[{1,2,3},list[[1]]],
+      RotGateM[list[[2]],list[[1]],list[[3]],numQubits],
+      list[[1]]==0,
+      CNOTM[list[[2]],list[[3]],numQubits],
+      list[[1]]==-1,
+      CZM[list[[2]],list[[3]],numQubits],
+      list[[1]]==-2,
+      If[Dimensions[list[[2]]]!= {},DiagMat[list[[2]],list[[3]],numQubits],Throw[StringForm["Unspecified diagonal gate cannot be represented as a matrix using ListFormToOp[]"]]],
+      list[[1]]==4,
+      Throw[StringForm["Measurements/Trace cannot be represented by matrices using ListFormToOp[]"]],
+      MemberQ[{5,6},list[[1]]],
+      Throw[StringForm["Starting in |0> or postselection cannot be represented by matrices using ListFormToOp[]"]]
+      ],
+    ListFormToOp[#,numQubits]&/@list
+  ]
+]
 
 (*Transforms a list in list format to a list containing the corresponding string representations of the gates*)
 ListFormToStr[list_]:=
@@ -303,29 +318,65 @@ SimplifyGateList[NGateList[st]]
 (* Use FullSimp\[Rule]False to avoid attempts to use FullSimplify *)
 Options[CreateIsometryFromList]={FullSimp->True};
 CreateIsometryFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{mat,mat2,i,k,ancillain,ancillainnums,ancillainvals,ancillaout,ancillaoutnums,ancillaoutvals,st2,id,rest,n1=n},
-IsListForm[st];
-If[n===Null,n1=NumberOfQubits[ToSimpleGate[st]]];ancillain=SortBy[Cases[ToSimpleGate[st],{5,_,_}],Last];
-If[ancillain==={},ancillainnums={},ancillainnums=Transpose[ancillain][[3]];ancillainvals=Transpose[ancillain][[2]]];ancillaout=SortBy[Cases[st,{6,_,_}],Last];
-If[ancillaout==={},ancillaoutnums={},ancillaoutnums=Transpose[ancillaout][[3]];ancillaoutvals=Transpose[ancillaout][[2]]];
-st2=DeleteCases[st,{x_/;x==5,_,_}|{x_/;x==6,_,_}];mat={{1}};k=0;
-(*st2 = DeleteCases[st, {x_ /; x == 6, _, _}];*)
-For[i=1,i<=n1,i++,mat=KroneckerProduct[mat,If[MemberQ[ancillainnums,i],k++;KetV[ancillainvals[[k]],2],IdentityMatrix[2]]]];
-isAnalytic=True;
-For[i=1,i<=Length[st2],i++,
-If[isAnalyticGate[st2[[i]]],,isAnalytic=False];
-If[isAnalytic,
-If[OptionValue[FullSimp],mat=FullSimplifyNoRoots[ListFormToOp[st2[[i]],n1].mat],mat=Simplify[ListFormToOp[st2[[i]],n1].mat],Print["CreateIsometryFromList: Error"]],
-mat=ListFormToOp[st2[[i]],n1].mat
+  IsListForm[st];
+  If[n===Null,n1=NumberOfQubits[ToSimpleGate[st]]];ancillain=SortBy[DeleteDuplicates@Cases[ToSimpleGate[st],{5,_,_}],Last];
+  If[ancillain==={},ancillainnums={},ancillainnums=Transpose[ancillain][[3]];ancillainvals=Transpose[ancillain][[2]]];ancillaout=SortBy[Cases[st,{6,_,_}],Last];
+  If[ancillaout==={},ancillaoutnums={},ancillaoutnums=Transpose[ancillaout][[3]];ancillaoutvals=Transpose[ancillaout][[2]]];
+  st2=DeleteCases[st,{x_/;x==5,_,_}|{x_/;x==6,_,_}];mat={{1}};k=0;
+  For[i=1,i<=n1,i++,
+    mat=KroneckerProduct[mat,
+      If[MemberQ[ancillainnums,i],
+        k++;KetV[ancillainvals[[k]],
+        2
+      ],IdentityMatrix[2]]
+    ]
+  ];
+  isAnalytic=True;
+  For[i=1,i<=Length[st2],i++,
+    If[isAnalyticGate[st2[[i]]],,isAnalytic=False];
+    If[isAnalytic,
+      If[OptionValue[FullSimp],
+        mat=FullSimplifyNoRoots[ApplyGate[st2[[i]], mat, n1]],
+        mat=Simplify[ApplyGate[st2[[i]], mat, n1]],
+        Print["CreateIsometryFromList: Error"]
+      ],
+      mat=ApplyGate[st2[[i]], mat, n1]
+    ]
+  ];
+  If[ancillaoutnums=={},
+    mat,mat2={{1}};
+    k=0;
+    For[i=1,i<=n1,i++,
+    (* usually ancillaoutvals will be all 1s, so create ket 0, sometimes (for instrument generation) we want to create ket 1 *)
+      mat2=KroneckerProduct[mat2,
+      If[MemberQ[ancillaoutnums,i],
+        k++;KetV[ancillaoutvals[[k]],2],
+        IdentityMatrix[2]
+      ]
+    ]
+  ];
+  CT[mat2].mat]
 ]
-];
-If[ancillaoutnums=={},mat,mat2={{1}};k=0;For[i=1,i<=n1,i++,(* usually ancillaoutvals will be all 1s, so create ket 0, sometimes (for instrument generation) we want to create ket 1 *)mat2=KroneckerProduct[mat2,If[MemberQ[ancillaoutnums,i],k++;KetV[ancillaoutvals[[k]],2],IdentityMatrix[2]]]];
-CT[mat2].mat]]
+
+(*This is seperated from CreateIsometryFromList to deal with matrix that can be applied efficently to mat without create the whole operator, such as uniformly controlled gate*)
+ApplyGate[gate_, mat_, numQubits_]:=Module[{i,j,newOrder},
+  Which[
+    gate[[1]]==labelCTRLST,
+    CTRLSTM[gate[[2]],gate[[3]], numQubits, mat],
+    gate[[1]]==labelMmt2,
+    i=gate[[2]];j=gate[[3]];newOrder=Range[numQubits];newOrder[[{i,j}]]=newOrder[[{j,i}]];
+      Flatten[#, 1] &@ ExchangeSystems[Partition[mat, 1], newOrder, ConstantArray[2, Length[newOrder]]],
+    True,
+    ListFormToOp[gate,numQubits].mat
+  ]
+]
 
 (*Create an n qubit isometry from list form. Multiplies the unitaries described in the list (numerically) and outputs the first m columns*)
 NCreateIsometryFromList[st_,n_:Null]:=CreateIsometryFromList[NGateList[st],n]
 
 Options[CreateChannelFromList]={POVM->False,DropZero->True,FullSimp->True};
-CreateChannelFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{mat,i,traces,tracesnums,postsel,postselnums,posn,chanout,st2,dims,n1=n},If[Not[OptionValue[POVM]]&&MemberQ[st,{4,1,_}],Print["CreateChannelFromList: measurement gate type found"]];
+CreateChannelFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{mat,i,traces,tracesnums,postsel,postselnums,posn,chanout,st2,dims,n1=n},
+If[Not[OptionValue[POVM]]&&MemberQ[st,{4,1,_}],Print["CreateChannelFromList: measurement gate type found"]];
 If[n===Null,n1=NumberOfQubits[st]];traces=Cases[st,{4,_,_}];If[traces==={},tracesnums={},tracesnums=Transpose[traces][[3]]];postsel=Cases[st,{6,_,_}];If[postsel==={},postselnums={},postselnums=Transpose[postsel][[3]]];If[Dimensions[Intersection[tracesnums,postselnums]]=={0},,Print["CreateChannelFromList: Cannot postselect on zero and measure/trace on the same qubit."]];st2=DeleteCases[st,{4,_,_}];
 mat=CreateIsometryFromList[st2,n1,FullSimp->OptionValue[FullSimp]];
 chanout={};posn={};dims={};For[i=1,i<=n1,i++,If[MemberQ[postselnums,i],,If[MemberQ[tracesnums,i],posn=Insert[posn,1,-1];dims=Insert[dims,{1,2},-1],posn=Insert[posn,2,-1];dims=Insert[dims,{2,2},-1]]]];For[i=0,i<=2^(Length[tracesnums])-1,i++,chanout=Insert[chanout,Tensor[BraV[i,2^(Length[tracesnums])],IdentityMatrix[2^(n1-Length[postselnums]-Length[tracesnums])],posn,dims].mat,-1]];
@@ -1970,10 +2021,21 @@ False
 ];
 
 isAnalyticGate[gate_]:=Module[{},
-If[Length[gate[[2]]]==0,out=Not[MachineNumberQ[gate[[2]]]];,out=True;Do[If[MachineNumberQ[gate[[2]][[i]]],out=False;Goto[LabelEnd]],{i,1,Length[gate[[2]]]}];
-Label[LabelEnd];
-];
-out
+  Which[Length[gate[[2]]]==0,
+    out=Not[MachineNumberQ[gate[[2]]]];,
+    gate[[1]]!=labelCTRLST,
+    out=True;
+    Do[
+      If[MachineNumberQ[gate[[2]][[i]]],
+        out=False;Goto[LabelEnd]
+      ],
+      {i,1,Length[gate[[2]]]}
+    ];
+    Label[LabelEnd];,
+    gate[[1]]==labelCTRLST,
+    out=And @@ isAnalyticGate /@ Flatten[gate[[3]],1];
+  ];
+  out
 ]
 
 isListEqualOpUpToPhase[st_,mat_,free_:0]:=If[st!={},isIdentityUpToPhase[ConjugateTranspose[mat[[All,1;;2^(Log2[Dimensions[mat][[1]]]-free)]]].(CreateIsometryFromList[st][[All,1;;2^(Log2[Dimensions[mat][[1]]]-free)]])],isIdentityUpToPhase[mat]]
@@ -3721,15 +3783,17 @@ IsQubitIsometry[v_,methodName_:"UNKNOWN"]:=Module[{numRow,numCol},
   ]
   
 IsListFormHelp[gate_,methodName_]:=Module[{},
-  If[MemberQ[{-2,-1,0,1,2,3,4,5,6},gate[[1]]],,Throw[StringJoin["The gate ",ToString[gate]," appearing as an input in method ",methodName ," is of unknown type."]]];
+  If[MemberQ[{-2,-1,0,1,2,3,4,5,6,labelMmt2,labelCTRLST},gate[[1]]],,Throw[StringJoin["The gate ",ToString[gate]," appearing as an input in method ",methodName ," is of unknown type."]]];
   Which[
    MemberQ[{-2},gate[[1]]],If[gate[[2]]=={}&&gate[[3]]=={},Goto[LabelEnd];];If[Length[Dimensions[gate[[2]]]]==1&&Length[Dimensions[gate[[3]]]]==1,,Throw[StringJoin["The dimensions of the parameter lists of the diagonal gate ",ToString[gate],"  appearing in the input of method ",methodName," are not supported."]]];
    If[Log2[Length[gate[[2]]]]==Length[gate[[3]]],,Throw[ToString[StringForm["The diagonal gate `1` appearing as an input in method `2` does not contain 2^`3` entries.",gate,methodName,Length[gate[[3]]]]]]],
     MemberQ[{-1,0},gate[[1]]],If[IntegerQ[gate[[2]]]&&IntegerQ[gate[[3]]],,Throw[StringJoin["There is a control gate ",ToString[gate]," appearing as an input in method ",methodName ," that has a control or a target qubit number that is not an integer."]]];
     If[gate[[2]]==gate[[3]],Throw[StringJoin["There is a controlled gate ",ToString[gate]," appearing as an input in method ",methodName ," that has a control qubit number equal to the target qubit number (which is not supported)."]]],
   MemberQ[{1,2,3},gate[[1]]], If[NumericQ[gate[[2]]]&&IntegerQ[gate[[3]]],,Throw[StringJoin["There is a rotation gate ",ToString[gate]," appering as an input in method ",methodName ," that has a wrong types."]]],
-  MemberQ[{4,5,6},gate[[1]]],If[MemberQ[{0,1},gate[[2]]]&&IntegerQ[gate[[3]]],,Throw[ToString[StringForm["The gate `1` appearing as an input in method `2` has unknown parameter types.",gate,methodName]]]]
-  (*Boxi TODO: MemberQ[{cgs},gate[[1]]],Map[IsListFormHelp[#]&,gate[[3]]]*)
+  MemberQ[{4,5,6},gate[[1]]],If[MemberQ[{0,1},gate[[2]]]&&IntegerQ[gate[[3]]],,Throw[ToString[StringForm["The gate `1` appearing as an input in method `2` has unknown parameter types.",gate,methodName]]]],
+  MemberQ[{labelCTRLST},gate[[1]]],
+    Map[IsListFormHelp[#]&,gate[[3]]
+  ]
 ];
 Label[LabelEnd];
   ];
@@ -3739,14 +3803,28 @@ IsListForm[st_,methodName_:"UNKNOWN"]:=Module[{postsel,postselnums,traceout,trac
 PrepareForQASM[st_]:=Module[{out,traceouts,traceoutnums,i},out=NGateList[st];If[Cases[out,{5,_,_}]==={},,Print["Notice: ancillas found in the input have been removed.  Output gate sequence corresponds to the same operation as the input provided the ancillas in the input sequence start in the correct states."];out=DeleteCases[out,{5,_,_}]];If[Cases[out,{-2,_,_}]==={},,Throw["Error in PrepareForQASM: diagonal gates found in the input, which is not supported by QASM. You may want to decompose them using DecDiagGate[]."];out=DeleteCases[out,{-2,_,_}]];If[Cases[st,{6,_,_}]==={},,Print["Warning: postselection gate found in the input has been removed.  Output gate sequence may not be as intended."];out=DeleteCases[out,{6,_,_}]];traceouts=Cases[st,{4,0,_}];If[traceouts==={},,traceoutnums=Transpose[traceouts][[3]];Print["Notice: trace out gate found in the input has been replaced by measurement.  Forgetting the outcome will recover the same operation as the input."];out=DeleteCases[out,{4,0,_}];For[i=1,i<=Length[traceoutnums],i++,out=Insert[out,{4,1,traceoutnums[[i]]},-1]]];out] 
 
 
-(*Boxi*)
-cgs=100  
+(*Boxi definded gates*)
+labelDiagGate=-2;
+labelCZ=-1;
+labelCNOT=0;
+labelRX=1;
+labelRY=2;
+labelRZ=3;
+labelMmt=4;
+labelInit=5;
+labelPostSelect=6;
+labelMmt2=7;
+labelNOT=8;
+labelBit=9;
+labelCTRLST=100;
+SimpleGate={labelDiagGate,labelCZ,labelCNOT,labelRX,labelRY,labelRZ,labelMmt,labelInit,labelPostSelect,labelMmt2,labelNOT,labelBit}
+
 Mmt2[j_,i_]:={7,j,i};
 NOT[i_]:={8,,i};
 Bit[p_,i_]:={9,p,i};
 CTRLST[z_,o_,u_,stList_]:=Module[{},
   If[Length[stList]==2^Length[u],,Throw[StringForm["Invalid use of controlled sequence, Length[stList]\[Equal]Length[u] is not fulfilled"]]];
-Return[{cgs, {z,o,u},stList} ]
+Return[{labelCTRLST, {z,o,u},stList} ]
 ]
 
 (*MeasuredQCM*)
@@ -3924,10 +4002,10 @@ Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,r
                 CTRLST[{},{},Join[Range[1,i-1],Range[loopNum+l+1,loopNum+l+m]],
                   Map[DecMethod[#,action={loopNum+1}]&,rList]
                 ],
-                Mmt2[i,loopNum+1],
-                CTRLST[{},{i},{},
+                Mmt2[i,loopNum+1]
+                (*CTRLST[{},{i},{},
                   {{NOT[loopNum+1]}}
-                ]
+                ]*)
               }
             ],
           OptionValue[DoNotReuseAncilla]==True,
@@ -3959,10 +4037,10 @@ Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,r
                 CTRLST[{},{},Range[1,i-1],
                   Map[DecMethod[#,action=Join[{loopNum+1},Range[loopNum+l+1,loopNum+l+m]]]&,rList]
                 ],
-                Mmt2[i,loopNum+1],
-                CTRLST[{},{i},{},
+                Mmt2[i,loopNum+1]
+                (*CTRLST[{},{i},{},
                   {{NOT[loopNum+1]}}
-                ]
+                ]*)
               }
             ],
           OptionValue[DoNotReuseAncilla]==True,
@@ -3991,12 +4069,17 @@ Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,r
 (*###########################################################################*)
 (*CreateOperationFromGateList*)
 
-FindUsedQubits[st_]:= Module[{QubitsLabel},
+FindUsedBits[st_]:= Module[{QubitsLabel,implementedGate},
+  implementedGate={labelDiagGate,labelCZ,labelCNOT,labelRX,labelRY,labelRZ,labelMmt,labelInit,labelPostSelect,labelMmt2};
+  If[
+    Not[AllTrue[st, MemberQ[implementedGate, #[[1]]] &]],
+    Throw[StringForm["Gate type not implemented in FindUsedBits"]],
+  ];
   If[
     st=={},
     QubitsLabel={},
     QubitsLabel=Map[
-      If[#[[1]] == -2 || #[[1]] == -1 || #[[1]] == 0, 
+      If[MemberQ[{labelDiagGate,labelCZ,labelCNOT,labelMmt2}, #[[1]]], 
         {#[[2]], #[[3]]},
         #[[3]]
       ]&,
@@ -4008,15 +4091,16 @@ FindUsedQubits[st_]:= Module[{QubitsLabel},
 
 (*Remove unused qubits in st qubits{2,5,1}->qubits{2,3,1}*)
 RemoveUnusedQubits[st_] := Module[{oldQubitsLabel, newQubitsLabel, asso},
+  implementedGate={labelDiagGate,labelCZ,labelCNOT,labelRX,labelRY,labelRZ,labelMmt,labelInit,labelPostSelect};
   If[
-    Not[MemberQ[Range[-2, 6], #[[1]]]] & @@ st,
+    Not[AllTrue[st, MemberQ[implementedGate, #[[1]]] &]],
     Throw[StringForm["Gate type not implemented in RemoveUnusedQubits"]],
   ];
-  oldQubitsLabel=FindUsedQubits[st];
+  oldQubitsLabel=FindUsedBits[st];
   newQubitsLabel=Range[Length[oldQubitsLabel]];
   asso=AssociationThread[oldQubitsLabel -> newQubitsLabel];
   Map[
-    If[#[[1]] == -2 || #[[1]] == -1 || #[[1]] == 0, 
+    If[MemberQ[{labelDiagGate,labelCZ,labelCNOT}, #[[1]]], 
       {#[[1]], #[[2]]/.asso, #[[3]]/.asso},
       {#[[1]], #[[2]], #[[3]]/.asso}
     ]&, st
@@ -4028,11 +4112,11 @@ CreateCompactIsometryFromList[st_] := Module[{},
   Return[CreateIsometryFromList[RemoveUnusedQubits[st]]];
 ]
 
-(*If the gate is cgs gate, this function maps all the gate in to a gate list to perform some validity check like NumberOfQubits*)
+(*If the gate is labelCTRLST gate, this function maps all the gate in to a gate list to perform some validity check like NumberOfQubits*)
 ToSimpleGate[st_] := Module[{},
   Flatten[
     Map[
-      (If[#[[1]]==cgs,
+      (If[#[[1]]==labelCTRLST,
       Flatten[#[[3]],1], 
       {#}]
       )&,  (*This function acts on each gate in the st*)
@@ -4059,12 +4143,12 @@ ApplyControl[ucg_, mat_] :=
     Throw[StringForm["The program only works for m to n qubits isometry with n>m"]],
   ];
   ids = Complement[Range @ numQubits, controls, isoTargets];
-  (*Find new order and check duplication: new order is that the most significant qubits control and the most insignificant qubits are controlled*)
+  (*Find new order and check duplication: the new order is that the most significant qubits control and the most insignificant qubits are controlled*)
   newOrder = Flatten[{controls, ids, isoTargets}];
   If[Length @ Part[Select[Tally @ newOrder, Part[#, 2] > 1 &], All, 1]>0,
     Throw[StringForm["There is duplication of the qubits indices in controls and isoTargets."]],
   ];
-  (*Permute the rows of mat, here is a trick, I don't know how to make ExchangeSystems work for isometry-like matrix, so I use Partition to make it "looks like" a state*)
+  (*Permute the rows of mat, here is a trick, ExchangeSystems doesn't work for isometry, so I use Partition to make it "looks like" a state, and only do row permuation*)
   mat2 = Flatten[#, 1]& @ ExchangeSystems[Partition[mat, 1], newOrder, 
  ConstantArray[2, Length[newOrder]]];
   (*If n>m （isometry), many entries can be neglected*)
@@ -4082,10 +4166,21 @@ ApplyControl[ucg_, mat_] :=
 CTRLSTM[controls_,stList_, numQubits_, mat_]:=Module[{zeroControls,oneControls,multiControls, gates, isoTargets},
   {zeroControls,oneControls,multiControls}=controls;
   gates = CreateCompactIsometryFromList[#] & /@ stList;
-  isoTargets = DeleteDuplicates @ Flatten[FindUsedQubits /@ stList];
+  isoTargets = DeleteDuplicates @ Flatten[FindUsedBits /@ stList];
   ApplyControl[{gates, multiControls, isoTargets, numQubits}, mat]
 ]
 
+BoxiTest[st_]:=Module[
+  {},
+  IsListFormHelp[#, "UNKNOWN"]& /@ st;
+  IsListForm[st];
+  isAnalyticGate /@ st;
+  ListFormToOp[DeleteCases[st,{4,_,_}]];
+  CreateIsometryFromList[DeleteCases[st,{4,_,_}]];
+  CreateInstrumentFromList[st]
+  (*
+  *)
+]
 End[];
 
 EndPackage[]
