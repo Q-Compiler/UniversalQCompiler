@@ -4055,7 +4055,7 @@ XXRGatesToCNOTRotations[st_]:=Module[{out},out=ReplaceXXWithCNOT[st];out=Replace
           
 (* Instruments *)
 (* arguments are input dimension, output dimension, number of channels and number of Kraus operators in each channel *)
-(* If nKraus is given as a list, this is the number of Kraus operators for each channel for *)
+(* If nKraus is given as a list, this is the number of Kraus operators for each channel. *)
 
 PickRandomInstrument[dimA_, dimB_, nChan_, nKraus_] := Module[{i,iso, opList={}, chanList = {}, totOp, nbOps, currentOp},
   (*find number of random operators to create for each channel and the total number of operators to generate*)

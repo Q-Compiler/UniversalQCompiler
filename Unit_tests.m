@@ -831,7 +831,7 @@ Print["testIsoSmall neither returned True nor False"]]
 (*Unit tests for decomposition of two-qubit unitaries*)
 
 
-(*Helpers for testing ZYZDec and XYXDec*)
+(*Helpers for testing ZYZDec, XYXDec, ZXZDec, XZXDec, YXYDec,YZYDec*)
 
 
 checkZYZDec[u_] := Module[{st},
@@ -849,6 +849,46 @@ st = XYXDec[u,1];
 If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
 Return[True], 
 Print["ZYZDec failed on input\n", MatrixFormOp[u]]; 
+Return[False]
+];
+]
+
+
+checkZXZDec[u_] := Module[{st},
+st = ZXZDec[u,1];
+If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
+Return[True], 
+Print["ZXZDec failed on input\n", MatrixFormOp[u]]; 
+Return[False]
+];
+]
+
+
+checkXZXDec[u_] := Module[{st},
+st = XZXDec[u,1];
+If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
+Return[True], 
+Print["XZXDec failed on input\n", MatrixFormOp[u]]; 
+Return[False]
+];
+]
+
+
+checkYXYDec[u_] := Module[{st},
+st = YXYDec[u,1];
+If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
+Return[True], 
+Print["YXYDec failed on input\n", MatrixFormOp[u]]; 
+Return[False]
+];
+]
+
+
+checkYZYDec[u_] := Module[{st},
+st = YZYDec[u,1];
+If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
+Return[True], 
+Print["YZYDec failed on input\n", MatrixFormOp[u]]; 
 Return[False]
 ];
 ]
@@ -876,16 +916,56 @@ isWorking
 ];
 
 
+testZXZDec := Module[{isWorking},
+isWorking=checkZXZDec[PickRandomIsometry[2,2]]&&checkZXZDec[{{0,1},{1,0}}]&&checkZXZDec[N[{{0,1},{1,0}}]]
+&&checkZXZDec[CreateOperationFromGateList[{Rz[Pi/3,1]}]]&&
+checkZXZDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]]&&checkZXZDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]];
+If[Not[isWorking],
+Print["ZXZDec failed"]];
+isWorking
+];
+
+
+testXZXDec := Module[{isWorking},
+isWorking=checkXZXDec[PickRandomIsometry[2,2]]&&checkXZXDec[{{0,1},{1,0}}]&&checkXZXDec[N[{{0,1},{1,0}}]]
+&&checkXZXDec[CreateOperationFromGateList[{Rz[Pi/3,1]}]]&&
+checkXZXDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]]&&checkXZXDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]];
+If[Not[isWorking],
+Print["XZXDec failed"]];
+isWorking
+];
+
+
+testYXYDec := Module[{isWorking},
+isWorking=checkYXYDec[PickRandomIsometry[2,2]]&&checkYXYDec[{{0,1},{1,0}}]&&checkYXYDec[N[{{0,1},{1,0}}]]
+&&checkYXYDec[CreateOperationFromGateList[{Rz[Pi/3,1]}]]&&
+checkYXYDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]]&&checkYXYDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]];
+If[Not[isWorking],
+Print["XZXDec failed"]];
+isWorking
+];
+
+
+testYZYDec := Module[{isWorking},
+isWorking=checkYZYDec[PickRandomIsometry[2,2]]&&checkYZYDec[{{0,1},{1,0}}]&&checkYZYDec[N[{{0,1},{1,0}}]]
+&&checkYZYDec[CreateOperationFromGateList[{Rz[Pi/3,1]}]]&&
+checkYZYDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]]&&checkYZYDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]];
+If[Not[isWorking],
+Print["XZXDec failed"]];
+isWorking
+];
+
+
 (*All tests for single-qubit unitaries*)
 
 
 testDecSingleQubit := Module[{out},
-If[testZYZDec && testXYXDec
+If[testZYZDec && testXYXDec&& testZXZDec && testXZXDec&& testYXYDec&& testYZYDec
 ,
-Print["All tests for ZYZDec and XYXDec pass."];
+Print["All tests for ZYZDec, XYXDec, ZXZDec, XZXDec, YXYDec and YZYDec pass."];
 out=True;
 ,
-Print["Error(s) in ZYZDec or XYXDec"];
+Print["Error(s) in ZYZDec, XYXDec, ZXZDec, XZXDec, YXYDec or YZYDec"];
 out=False;
 ,
 Print["testDecSingleQubit neither returned True nor False"]
