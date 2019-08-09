@@ -25,15 +25,6 @@ BeginPackage["UniversalQCompiler`",{"QI`"}];
 6. Implementation of multi-controlled-Toffoli gates using ancillas to lower the C-NOT count.
 7. [Raban] Extend Stateprepration scheme for small Schmidt rank
 *)
-(*ToFix:
-1. XYXDec can return a ZYZ output, e.g. for
-{{0.7065332001434155` + 0.01331469739672239` I,
- 0.4888081996161278` -
-  0.5115663201544624` I}, {0.5440477104845266` -
-  0.45237776762887333` I, -0.03542548508468498` +
-  0.7057701318971897` I}}
-This seems to be due to the Simp->True default option; running with Simp->False gives the expected behaviour. 
-*)
 
 (*Methods to handle and simplify gate sequence*)
 (*CreateIsometryFromList::usage="CreateIsometryFromList[st,(n)] creates the operator corresponding to the list (optionally, the total number of qubits n can be determined)."
@@ -1325,9 +1316,12 @@ Switch[action,
 Null,actionQ=1,
 _,actionQ=action
 ];
-st={{zType,angles[[3]],actionQ},{yType,angles[[2]],actionQ},{zType,angles[[1]],actionQ}};
+st={Rz[angles[[3]],actionQ],Ry[angles[[2]],actionQ],Rz[angles[[1]],actionQ]};
 If[OptionValue[Simp],
-st=SimplifyGateListReverseGateOrder[st]
+If[Chop[st[[2]][[2]]]==0,
+st={Rz[angles[[3]]+angles[[1]],actionQ]};
+];
+st=DeleteCases[st,x_/;Chop[x[[2]]]==0];
 ];
 Reverse[st]
 )
@@ -1344,7 +1338,10 @@ _,actionQ=action
 ];
 st={{xType,angles[[3]],actionQ},{yType,angles[[2]],actionQ},{xType,angles[[1]],actionQ}};
 If[OptionValue[Simp],
-st=SimplifyGateListReverseGateOrder[st]
+If[Chop[st[[2]][[2]]]==0,
+st={Rx[angles[[3]]+angles[[1]],actionQ]};
+];
+st=DeleteCases[st,x_/;Chop[x[[2]]]==0];
 ];
 Reverse[st]
 )
@@ -1359,9 +1356,12 @@ ZXZDec[u_,action:Except[_?OptionQ]:Null,OptionsPattern[]] := Module[{st,angles,a
     _,actionQ=action
   ];
   st={{zType,angles[[3]],actionQ},{xType,angles[[2]],actionQ},{zType,angles[[1]],actionQ}};
-  (*If[OptionValue[Simp],
-    st=SimplifyGateListReverseGateOrder[st]
-  ];*)(*This simplification makes the decomposition to become a ZYZ instead...*)
+  If[OptionValue[Simp],
+If[Chop[st[[2]][[2]]]==0,
+st={Rz[angles[[3]]+angles[[1]],actionQ]};
+];
+st=DeleteCases[st,x_/;Chop[x[[2]]]==0];
+];
   Reverse[st]
 )]
 
@@ -1374,9 +1374,12 @@ XZXDec[u_,action:Except[_?OptionQ]:Null,OptionsPattern[]] := Module[{st,angles,a
     _,actionQ=action
   ];
   st={{xType,angles[[3]],actionQ},{zType,angles[[2]],actionQ},{xType,angles[[1]],actionQ}};
-  (*If[OptionValue[Simp],
-    st=SimplifyGateListReverseGateOrder[st]
-  ];*)(*This simplification makes the decomposition to become a ZYZ instead...*)
+  If[OptionValue[Simp],
+If[Chop[st[[2]][[2]]]==0,
+st={Rx[angles[[3]]+angles[[1]],actionQ]};
+];
+st=DeleteCases[st,x_/;Chop[x[[2]]]==0];
+];
   Reverse[st]
 )]
 
@@ -1389,9 +1392,12 @@ YXYDec[u_,action:Except[_?OptionQ]:Null,OptionsPattern[]] := Module[{st,angles,a
     _,actionQ=action
   ];
   st={{yType,angles[[3]],actionQ},{xType,angles[[2]],actionQ},{yType,angles[[1]],actionQ}};
-  (*If[OptionValue[Simp],
-    st=SimplifyGateListReverseGateOrder[st]
-  ];*)(*This simplification makes the decomposition to become a ZYZ instead...*)
+  If[OptionValue[Simp],
+If[Chop[st[[2]][[2]]]==0,
+st={Ry[angles[[3]]+angles[[1]],actionQ]};
+];
+st=DeleteCases[st,x_/;Chop[x[[2]]]==0];
+];
   Reverse[st]
 )]
 
@@ -1404,9 +1410,12 @@ YZYDec[u_,action:Except[_?OptionQ]:Null,OptionsPattern[]] := Module[{st,angles,a
     _,actionQ=action
   ];
   st={{yType,angles[[3]],actionQ},{zType,angles[[2]],actionQ},{yType,angles[[1]],actionQ}};
-  (*If[OptionValue[Simp],
-    st=SimplifyGateListReverseGateOrder[st]
-  ];*)(*This simplification makes the decomposition to become a ZYZ instead...*)
+  If[OptionValue[Simp],
+If[Chop[st[[2]][[2]]]==0,
+st={Ry[angles[[3]]+angles[[1]],actionQ]};
+];
+st=DeleteCases[st,x_/;Chop[x[[2]]]==0];
+];
   Reverse[st]
 )]
 
