@@ -3242,15 +3242,18 @@ T2Indices = Select[Range[0,7], Function[n, IntegerDigits[n,2,3][[specialQubitInd
 T1 = ArrayReshape[u[[T1Indices]],{2,2}];
 T2 =  ArrayReshape[u[[T2Indices]],{2,2}];
 
-eVals = Eigenvalues[{T2,T1}];
+eVals = Eigenvalues[{T1,T2}];
 
-lambda = If[Chop[N[eVals[[1]]]] != 0, eVals[[1]], If[Chop[N[eVals[[2]]]] != 0, eVals[[2]], Throw["In threeQubitSchmidtDecomposition, neither generalised eigenValue is non-zero"]]];
+U = Switch[Chop[Abs[N[eVals[[1]]]]], 
+Infinity,
+{{0., 1.}, {1.,0.}},
+0,
+{{1., 0.}, {0.,1.}}, 
+_,
+{{1/Sqrt[1+Abs[eVals[[1]]]^2], -eVals[[1]]/Sqrt[1+Abs[eVals[[1]]]^2]}, {-Conjugate[eVals[[1]]]/Sqrt[1+Abs[eVals[[1]]]^2], -1/Sqrt[1+Abs[eVals[[1]]]^2]}}
+];
 
-If[N[eVals[[1]]]!=\[Infinity],u11 = Abs[eVals[[1]]]Sqrt[1/(1+Abs[eVals[[1]]]^2)];
-u12 = -(u11/eVals[[1]]),u11 = Limit[Abs[x]Sqrt[1/(1+Abs[x]^2)],x->\[Infinity]];
-u12 = Limit[-(u11/x),x->\[Infinity]]];If[Chop[N[u12]]!=0,
-U = {{u11, u12}, {(1-u11^2)/u12,-u11}},U = {{u11, u12}, {Limit[(1-u11^2)/x,x->0],-u11}}];
-T1Prime = U[[1,1]]T1 + U[[1,2]] T2;
+T1Prime = U[[1,1]] T1 + U[[1,2]] T2;
 {a1,s1,b1} = SingularValueDecomposition[T1Prime];
 T2Prime = U[[2,1]] T1 + U[[2,2]] T2;
 {a2,s2,b2} = SingularValueDecomposition[T2Prime];
