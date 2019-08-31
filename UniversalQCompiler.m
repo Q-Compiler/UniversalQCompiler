@@ -32,7 +32,7 @@ NCreateIsometryFromList::usage="CreateIsometryFromList[st,(n)] creates the opera
 CreateChannelFromList::usage="CreateChannelFromList[st, (n)] multiplies the gates in the list st on n qubits and outputs the channel represented."
 NCreateChannelFromList::usage="NCreateChannelFromList[st, (n)] multiplies the gates in the list st on n qubits numericallyand outputs the channel represented."
 CreateInstrumentFromList::usage="CreateInstrumentFromList[st, (n)] multiplies the gates in the list st on n qubits and outputs the instrument represented."
-NCreateInstrumentFromList::usage="NCreateInstrumentFromList[st, (n)] multiplies the gates in the list st on n qubits numericallyand outputs the instrument represented."
+NCreateInstrumentFromList::usage="NCreateInstrumentFromList[st, (n)] multiplies the gates in the list st on n qubits numerically and outputs the instrument represented."
 *)
 CreatePOVMFromGateList::usage="CreatePOVMFromGateList[st, (n)] multiplies the gates in the list st on n qubits and outputs the POVM represented (optionally, the total number of qubits n can be determined)."
 NCreatePOVMFromGateList::usage="NCreatePOVMFromGateList[st, (n)] multiplies the gates in the list st on n qubits numerically and outputs the POVM represented (optionally, the total number of qubits n can be determined)."
@@ -823,7 +823,7 @@ maxNum=NumberOfQubits[st];
 numQubits = Switch[n, 
 Null, maxNum, 
 _, n];
-If[numQubits<maxNum,Print["Error in computeGridForm[]. The total number of qubits must be larger than the largest qubit numer the input circuit is acting on. Null was returned."];Return[Null]]; 
+If[numQubits<maxNum,Print["Error in computeGridForm[]. The total number of qubits must be larger than the largest qubit number the input circuit is acting on. Null was returned."];Return[Null]]; 
 (*Initialize grid*)
 gatesOnEachWireSoFar = ConstantArray[{}, numQubits];
 (*Add gates:*)
@@ -3236,7 +3236,7 @@ Flatten[KroneckerProduct[Flatten[s2[[1,1]]KroneckerProduct[a2[[1]],b2[[1]]] + s2
 
 
 *)
-ThreeQubitSchmidtDecomposition[u_, specialQubitIndex_] := Module[{T1,T2,T1Prime, eVals,u11,u12,U,a1,s1,b1,a2,s2,b2,lambda,T2Prime,ans,T1Indices,T2Indices},
+ThreeQubitSchmidtDecomposition[u_, specialQubitIndex_] := Module[{T1,T2,T1Prime,exact,eVals,u11,u12,U,a1,s1,b1,a2,s2,b2,lambda,T2Prime,ans,T1Indices,T2Indices},
 T1Indices = Select[Range[0,7], Function[n, IntegerDigits[n,2,3][[specialQubitIndex]] == 0]] +1;
 T2Indices = Select[Range[0,7], Function[n, IntegerDigits[n,2,3][[specialQubitIndex]] == 1]] +1;
 T1 = ArrayReshape[u[[T1Indices]],{2,2}];
@@ -3244,11 +3244,15 @@ T2 =  ArrayReshape[u[[T2Indices]],{2,2}];
 
 eVals = Eigenvalues[{T1,T2}];
 
+(* check if input is exact or not and if so, set exact=True *)
+
+exact=Tr[Map[Not,Map[MachineNumberQ,Flatten[u]]],And];
+
 U = Switch[Chop[Abs[N[eVals[[1]]]]], 
 Infinity,
-{{0., 1.}, {1.,0.}},
+If[exact,{{0,1},{1,0}},{{0.,1.},{1.,0.}}],
 0,
-{{1., 0.}, {0.,1.}}, 
+If[exact,{{0,1},{1,0}},{{0.,1.},{1.,0.}}], 
 _,
 {{1/Sqrt[1+Abs[eVals[[1]]]^2], -eVals[[1]]/Sqrt[1+Abs[eVals[[1]]]^2]}, {-Conjugate[eVals[[1]]]/Sqrt[1+Abs[eVals[[1]]]^2], -1/Sqrt[1+Abs[eVals[[1]]]^2]}}
 ];
