@@ -160,7 +160,7 @@ testRzAngle&&
 testRxAngle&&
 testRyAngle
 ,Print["All tests for the basic methods pass."],,
-Print["testAllBasicMethods did neither return True nor False"]
+Print["testAllBasicMethods neither returned True nor False"]
 ]
 )
 ]
@@ -339,7 +339,7 @@ testDecMCSpecialUnitary&&
 testDecMCSpecialUnitaryUpToDiagonalWithDiagonal&&
 testDecMCGspecialUnitaryUpToDiagonal
 ,Print["All tests for MCGs pass."],,
-Print["testAllMCGMethods did neither return True nor False"]
+Print["testAllMCGMethods neither returned True nor False"]
 ]
 )
 ]
@@ -487,7 +487,7 @@ Print["Error in DecUCGZ[] with error message code ",error];False
 (*Test UGGs*)
 
 
-testUCGs:=If[testApplyUCG&&testDecUCG &&testDecUCGUpToDiagonal&& testDecUCZY,Print["All tests for UCGs pass."],,Print["testUCGs did neither return True nor False"]]
+testUCGs:=If[testApplyUCG&&testDecUCG &&testDecUCGUpToDiagonal&& testDecUCZY,Print["All tests for UCGs pass."],,Print["testUCGs neither returned True nor False"]]
 
 
 (*Unit tests for diagonal gates*)
@@ -543,7 +543,7 @@ Print["Error in DecDiagGate[] with error message code ",error];False
 
 testAllDiagGateMethods:=Module[{},( 
 If[testDecDiagGate &&  testApplyDiag,Print["All tests for diagonal gates pass."],,
-Print["testAllDiagGateMethods did neither return True nor False"]
+Print["testAllDiagGateMethods neither returned True nor False"]
 ]
 )
 ]
@@ -580,7 +580,7 @@ testColumnByColumnDec:=Module[{error,v1,v2,v3,vExact1},(
 error=0;
 v1=CreateOperationFromGateList[{Ancilla[0,1],Rx[1,2],CNOT[1,2],Rz[1,1],Rz[1,1]}];
 v2=CreateOperationFromGateList[NGateList[{Ancilla[0,1],Rx[1,3],CNOT[3,1],Rz[1,3],Rz[1,1],CNOT[2,3],Ry[1,1]}]];
-v3=CreateOperationFromGateList[NGateList[{Ancilla[0,1],Ancilla[0,4],Rx[1,3],CNOT[3,1],Rz[2.5,3],Rz[0.7,1],CNOT[2,3],Ry[0.4,1],Rz[0.4,1],{2,\[Pi]/2,2},{3,\[Pi],2},CNOT[2,4]}]];
+v3=CreateOperationFromGateList[NGateList[{Ancilla[0,1],Ancilla[0,4],Rx[1,3],CNOT[3,1],Rz[2.5,3],Rz[0.7,1],CNOT[2,3],Ry[0.4,1],Rz[0.4,1],Ry[\[Pi]/2,2],Rz[\[Pi],2],CNOT[2,4]}]];
 vExact1=CreateOperationFromGateList[{Ancilla[0,1],Rx[Pi/4,2],Rx[Pi/4,1],CNOT[1,2],CNOT[3,2],CNOT[2,3],CNOT[3,1]}];
 If[Quiet[Check[checkColumnByColumnDec[PickRandomIsometry[2^2,2^4]],error=1;False]]&&
 Quiet[Check[checkColumnByColumnDec[PickRandomIsometry[2^3,2^3]],error=2;False]]&&
@@ -605,7 +605,7 @@ Print["Error in ColumnByColumnDec[] with error message code ",error];False
 
 
 testCCDec:=If[testDecUCGUpToDiagonal&&testColumnByColumnDec,Print["All tests for the column-by-column decomposition pass."],,
-Print["ttestCCDec did neither return True nor False"]]
+Print["ttestCCDec neither returned True nor False"]]
 
 
 (*Unit tests for DecIsometry*)
@@ -629,7 +629,7 @@ testDecIsometry:=Module[{error,v1,v2,v3},(
 error=0;
 v1=CreateOperationFromGateList[{Ancilla[0,1],Rx[Pi,2],CNOT[1,2],Rz[Pi,1],Rz[Pi,1]}];
 v2=CreateOperationFromGateList[NGateList[{Ancilla[0,1],Rx[1,3],CNOT[3,1],Rz[1,3],Rz[1,1],CNOT[2,3],Ry[1,1]}]];
-v3=CreateOperationFromGateList[NGateList[{Ancilla[0,1],Ancilla[0,4],Rx[1,3],CNOT[3,1],Rz[2.5,3],Rz[0.7,1],CNOT[2,3],Ry[0.4,1],Rz[0.4,1],{2,\[Pi]/2,2},{3,\[Pi],2},CNOT[2,4]}]];
+v3=CreateOperationFromGateList[NGateList[{Ancilla[0,1],Ancilla[0,4],Rx[1,3],CNOT[3,1],Rz[2.5,3],Rz[0.7,1],CNOT[2,3],Ry[0.4,1],Rz[0.4,1],Ry[\[Pi]/2,2],Rz[\[Pi],2],CNOT[2,4]}]];
 If[Quiet[Check[checkDecIsometry[PickRandomIsometry[2^2,2^4]],error=1;False]]&&
 Quiet[Check[checkDecIsometry[PickRandomIsometry[2^1,2^2]],error=2;False]]&&
 Quiet[Check[checkDecIsometry[randPermutMat[2^1,2^2]],error=3;False]]&&
@@ -647,7 +647,7 @@ Print["Error in DecIsometry[] with error message code ",error];False
 
 
 testIsometryDecompositions:=If[testDecIsometry,Print["All tests for DecIsometry pass."],,
-Print["testIsometryDecompositions did neither return True nor False"]]
+Print["testIsometryDecompositions neither returned True nor False"]]
 
 
 (*Unit tests for Isometries on a small number of qubits*)
@@ -772,14 +772,14 @@ TestBoolean = True;
 state = Transpose[{Flatten[KroneckerProduct[PickRandomPsi[2],PickRandomPsi[2], PickRandomPsi[2]]]}];
 If[checkStatePrep3Qubits[state,0], ,Print["3 qubit state preparation failed on a Class 0 state"]; TestBoolean = False];
 
-state = NCreateIsometryFromListDim[{{5,0,3},{5,0,2},{5,0,1},{3, 0.8, 1},{1, 0.1, 2},{1, 0.8, 3}, {1, 0.4, 1},{2, 0.4, 3}}, 8];
+state = NCreateIsometryFromListDim[{Ancilla[0,3],Ancilla[0,2],Ancilla[0,1],Rz[0.8,1],Rx[0.1,2],Rx[0.8,3],Rx[0.4,1],Ry[0.4, 3]}, 8];
 If[checkStatePrep3Qubits[state,0], ,Print["3 qubit state preparation failed on a Class 0 state"]; TestBoolean = False];
 
 (*class 1*)
 state = Transpose[{Flatten[KroneckerProduct[PickRandomPsi[2],PickRandomPsi[4]]]}];
 If[checkStatePrep3Qubits[state,1], ,Print["3 qubit state preparation failed on a Class 1 state"]; TestBoolean = False];
 
-state = NCreateIsometryFromListDim[{{5,0,3},{5,0,2},{5,0,1},{3, 0.8, 1},{1, 0.1, 2},{1, 0.8, 3},{2, 0.8, 1},{3, 0.1, 2},{0, 1, 2}, {1, 0.4, 1},{2, 0.4, 3},{2, 0.8, 1},{1, 0.1, 2},{1, 0.8, 3}},8];
+state = NCreateIsometryFromListDim[{Ancilla[0,3],Ancilla[0,2],Ancilla[0,1],Rz[0.8,1],Rx[0.1,2],Rx[0.8,3],Ry[0.8,1],Rz[0.1,2],CNOT[1, 2],Rx[0.4,1],Ry[0.4,3],Ry[0.8,1],Rx[0.1,2],Rx[0.8,3]},8];
 If[checkStatePrep3Qubits[state,1], ,Print["3 qubit state preparation failed on a Class 1 state"]; TestBoolean = False];
 
 (*class 2*)
@@ -792,10 +792,10 @@ If[checkStatePrep3Qubits[state,2], ,Print["3 qubit state preparation failed on a
  theta = RandomVariate[UniformDistribution[{0, \[Pi]/2}]];ru = RU[2]; state = Transpose[{Cos[theta] *Flatten[KroneckerProduct[PickRandomPsi[2], PickRandomPsi[2],ru[[All,1]]]]+  Sin[theta]*Flatten[KroneckerProduct[PickRandomPsi[2], PickRandomPsi[2],ru[[All,2]]]]}];
 If[checkStatePrep3Qubits[state,2], ,Print["3 qubit state preparation failed on a Class 2 state, with the orthogonal factors on the third qubit"]; TestBoolean = False];
 
-state = NCreateIsometryFromListDim[{{5,0,3},{5,0,2},{5,0,1},{3, 0.8, 1},{1, 0.1, 2},{1, 0.8, 3},{2, 0.8, 1},{3, 0.1, 2},{0, 1, 2}, {1, 0.4, 2},{2, 0.4, 3},{0, 2, 3},{2, 0.9, 3},{2, 0.8, 1},{1, 0.1, 2},{1, 0.8, 3}},8];
+state = NCreateIsometryFromListDim[{Ancilla[0,3],Ancilla[0,2],Ancilla[0,1],Rz[0.8,1],Rx[0.1,2],Rx[0.8,3],Ry[0.8,1],Rz[0.1,2],CNOT[1,2],Rx[0.4,2],Ry[0.4,3],CNOT[2,3],Ry[0.9,3],Ry[0.8,1],Rx[0.1,2],Rx[0.8,3]},8];
 If[checkStatePrep3Qubits[state,2], ,Print["3 qubit state preparation failed on a Class 2 state"]; TestBoolean = False];
 
-state = NCreateIsometryFromListDim[{{5,0,3},{5,0,2},{5,0,1},{3, 0.8, 1},{1, 0.1, 2},{1, 0.8, 3},{2, 0.8, 1},{3, 0.1, 2},{0, 1, 2}, {1, 0.4, 1},{2, 0.4, 3},{0, 3, 1},{2, 0.8, 1},{1, 0.1, 2},{1, 0.8, 3}},8];
+state = NCreateIsometryFromListDim[{Ancilla[0,3],Ancilla[0,2],Ancilla[0,1],Rz[0.8,1],Rx[0.1,2],Rx[0.8,3],Ry[0.8,1],Rz[0.1,2],CNOT[1, 2],Rx[0.4,1],Ry[0.4,3],CNOT[3,1],Ry[0.8,1],Rx[0.1,2],Rx[0.8,3]},8];
 If[checkStatePrep3Qubits[state,2], ,Print["3 qubit state preparation failed on a Class 2 state"]; TestBoolean = False];
 
 (*class 3*)
@@ -822,7 +822,7 @@ Print["Error in DecIso12[] with error message code ",error];False
 
 
 testIsoSmall:=If[testStatePrep1Qubit && testStatePrep2Qubits && testStatePrep3Qubits && testDecIso12 ,Print["All tests for the isometries on a small number of qubits pass."],,
-Print["testIsoSmall did neither return True nor False"]]
+Print["testIsoSmall neither returned True nor False"]]
 
 
 (*Unit tests for decomposition of single-qubit unitaries*)
@@ -831,7 +831,7 @@ Print["testIsoSmall did neither return True nor False"]]
 (*Unit tests for decomposition of two-qubit unitaries*)
 
 
-(*Helpers for testing ZYZDec and XYXDec*)
+(*Helpers for testing ZYZDec, XYXDec, ZXZDec, XZXDec, YXYDec,YZYDec*)
 
 
 checkZYZDec[u_] := Module[{st},
@@ -849,6 +849,46 @@ st = XYXDec[u,1];
 If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
 Return[True], 
 Print["ZYZDec failed on input\n", MatrixFormOp[u]]; 
+Return[False]
+];
+]
+
+
+checkZXZDec[u_] := Module[{st},
+st = ZXZDec[u,1];
+If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
+Return[True], 
+Print["ZXZDec failed on input\n", MatrixFormOp[u]]; 
+Return[False]
+];
+]
+
+
+checkXZXDec[u_] := Module[{st},
+st = XZXDec[u,1];
+If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
+Return[True], 
+Print["XZXDec failed on input\n", MatrixFormOp[u]]; 
+Return[False]
+];
+]
+
+
+checkYXYDec[u_] := Module[{st},
+st = YXYDec[u,1];
+If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
+Return[True], 
+Print["YXYDec failed on input\n", MatrixFormOp[u]]; 
+Return[False]
+];
+]
+
+
+checkYZYDec[u_] := Module[{st},
+st = YZYDec[u,1];
+If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
+Return[True], 
+Print["YZYDec failed on input\n", MatrixFormOp[u]]; 
 Return[False]
 ];
 ]
@@ -876,19 +916,59 @@ isWorking
 ];
 
 
+testZXZDec := Module[{isWorking},
+isWorking=checkZXZDec[PickRandomIsometry[2,2]]&&checkZXZDec[{{0,1},{1,0}}]&&checkZXZDec[N[{{0,1},{1,0}}]]
+&&checkZXZDec[CreateOperationFromGateList[{Rz[Pi/3,1]}]]&&
+checkZXZDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]]&&checkZXZDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]];
+If[Not[isWorking],
+Print["ZXZDec failed"]];
+isWorking
+];
+
+
+testXZXDec := Module[{isWorking},
+isWorking=checkXZXDec[PickRandomIsometry[2,2]]&&checkXZXDec[{{0,1},{1,0}}]&&checkXZXDec[N[{{0,1},{1,0}}]]
+&&checkXZXDec[CreateOperationFromGateList[{Rz[Pi/3,1]}]]&&
+checkXZXDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]]&&checkXZXDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]];
+If[Not[isWorking],
+Print["XZXDec failed"]];
+isWorking
+];
+
+
+testYXYDec := Module[{isWorking},
+isWorking=checkYXYDec[PickRandomIsometry[2,2]]&&checkYXYDec[{{0,1},{1,0}}]&&checkYXYDec[N[{{0,1},{1,0}}]]
+&&checkYXYDec[CreateOperationFromGateList[{Rz[Pi/3,1]}]]&&
+checkYXYDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]]&&checkYXYDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]];
+If[Not[isWorking],
+Print["XZXDec failed"]];
+isWorking
+];
+
+
+testYZYDec := Module[{isWorking},
+isWorking=checkYZYDec[PickRandomIsometry[2,2]]&&checkYZYDec[{{0,1},{1,0}}]&&checkYZYDec[N[{{0,1},{1,0}}]]
+&&checkYZYDec[CreateOperationFromGateList[{Rz[Pi/3,1]}]]&&
+checkYZYDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]]&&checkYZYDec[CreateOperationFromGateList[{Ry[Pi/3,1]}]];
+If[Not[isWorking],
+Print["XZXDec failed"]];
+isWorking
+];
+
+
 (*All tests for single-qubit unitaries*)
 
 
 testDecSingleQubit := Module[{out},
-If[testZYZDec && testXYXDec
+If[testZYZDec && testXYXDec&& testZXZDec && testXZXDec&& testYXYDec&& testYZYDec
 ,
-Print["All tests for ZYZDec and XYXDec pass"];
+Print["All tests for ZYZDec, XYXDec, ZXZDec, XZXDec, YXYDec and YZYDec pass."];
 out=True;
 ,
-Print["Error(s) in ZYZDec or XYXDec"];
+Print["Error(s) in ZYZDec, XYXDec, ZXZDec, XZXDec, YXYDec or YZYDec"];
 out=False;
 ,
-Print["testDecSingleQubit did neither return True nor False"]
+Print["testDecSingleQubit neither returned True nor False"]
 ];
 out
 ]
@@ -1015,12 +1095,12 @@ testDec2Qubit := Module[{out},
 If[testDec2QubitGateUpToDiagonalNoCnots && testDec2QubitGateUpToDiagonalOneCnot && testDec2QubitGateUpToDiagonalGeneric &&
 testDec2QubitNoCnots && testDec2QubitOneCnot &&testDec2QubitTwoCnot && testDec2QubitGeneric
 ,
-Print["All tests for Dec2Qubit pass"];
+Print["All tests for Dec2Qubit pass."];
 out=True;
 ,
 Print["Error(s) in Dec2Qubit"];
 out=False,
-Print["testDec2Qubit did neither return True nor False"]
+Print["testDec2Qubit neither returned True nor False"]
 ];
 out
 ]
@@ -1080,7 +1160,7 @@ Return[passedAllTestsSoFar];
 
 
 testQSDAll:=If[testQSD,Print["All tests for the QSD pass."],,
-Print["testQSDAll did neither return True nor False"]]
+Print["testQSDAll neither returned True nor False"]]
 
 
 (*Unit tests for Stinespring*)
@@ -1122,14 +1202,14 @@ testStinespring :=
       passedAllTestsSoFar = False;
       Print["StinespringQubit failed on a generic channel from ", m, 
        " qubits to ", n, " qubits with ", p, " Kraus operators"]]]]]; If[passedAllTestsSoFar, 
-   Print["All tests for StinespringQubit on generic inputs pass"]];
+   Print["All tests for StinespringQubit on generic inputs pass."]];
    For[p=2,p<6,p++,
    chan=FPickRandomChannel[2,2,p,2];If[Not[checkStinespring[chan,Exact->True]],
       passedAllTestsSoFar = False;Print["StinespringQubit failed on an exact
 channel from 1 qubit to 1 qubits with ", p, " Kraus operators"]]];
     If[passedAllTestsSoFar, 
-   Print["All tests for StinespringQubit pass"],,
-   Print["testStinespring  did neither return True nor False"]]]
+   Print["All tests for StinespringQubit pass."],,
+   Print["testStinespring  neither returned True nor False"]]]
 
 
 (*Unit tests for POVMs*)
@@ -1164,14 +1244,14 @@ testPOVM :=
       passedAllTestsSoFar = False;
       Print["POVMToIsometry failed on a generic POVM on ", m, 
        " qubits with ", p, " elements"]]]]; If[passedAllTestsSoFar, 
-   Print["All tests for POVMToIsometry on generic inputs pass"]];
+   Print["All tests for POVMToIsometry on generic inputs pass."]];
    For[p=2,p<10,p++,
    If[Not[checkPOVM[Table[IdentityMatrix[4]/p,{i,1,p}]]],
       passedAllTestsSoFar = False;
       Print["POVMToIsometry failed on an exact POVM with ", p, " elements"]]];
     If[passedAllTestsSoFar, 
-   Print["All tests for POVMToIsometry pass"],,
-    Print["testPOVM did neither return True nor False"]]]
+   Print["All tests for POVMToIsometry pass."],,
+    Print["testPOVM neither returned True nor False"]]]
 
 
 (*Unit tests for Knill decomposition*)
@@ -1512,8 +1592,8 @@ Print["Error in KnillDec[] for exact inputs with error message code ",error];Fal
 testKnill := Module[{},(
 If[TestXToY &&TestIsoToUnitarySpecial&&TestUnitaryEigenvalueDecomp&&TestKnillDec1
 &&TestKnillDec2&&TestKnillDec3&&FTestKnillDec,
-Print["All tests for Knill's decomposition pass"],,
-  Print["testKnill did neither return True nor False"]
+Print["All tests for Knill's decomposition pass."],,
+  Print["testKnill neither returned True nor False"]
 ]
 )]
 
@@ -1554,14 +1634,125 @@ Print["Error in StatePrepRecursive with error message code ",error];False
 
 testStatePreparationAll := Module[{},(
 If[TestStatePreparation,
-Print["All tests for State preparation pass"],,
- Print["testStatePreparationAll did neither return True nor False"]
+Print["All tests for State preparation pass."],,
+ Print["testStatePreparationAll neither returned True nor False"]
 ]
 )]
 
 
+CheckCNOTtoXX[v_]:=Module[{st,st2,iso,ch},
+st=DecIsometryGeneric[v];st2=CNOTRotationsToXXRGates[st];
+iso=CreateOperationFromGateList[st2,Log[2,Dimensions[v][[1]]]];ch=CT[v].iso;
+Chop[ch/ch[[1,1]]-IdentityMatrix[Dimensions[iso][[2]]],10^-6]==0*IdentityMatrix[Dimensions[iso][[2]]]]
+
+CheckXXtoCNOT[v_]:=Module[{st,st2,st3,iso,ch},
+st=DecIsometryGeneric[v];st2=CNOTRotationsToXXRGates[st];
+st3=XXRGatesToCNOTRotations[st2];
+iso=CreateOperationFromGateList[st3,Log[2,Dimensions[v][[1]]]];ch=CT[v].iso;
+Chop[ch/ch[[1,1]]-IdentityMatrix[Dimensions[iso][[2]]],10^-6]==0*IdentityMatrix[Dimensions[iso][[2]]]]
+
+TestCNOTtoXX:=Module[{error=0},If[Quiet[Check[CheckCNOTtoXX[PickRandomIsometry[2^2,2^2]],error=1;False]]&&
+Quiet[Check[CheckCNOTtoXX[PickRandomIsometry[2^2,2^3]],error=2;False]]&&
+Quiet[Check[CheckCNOTtoXX[PickRandomIsometry[2^2,2^4]],error=3;False]]&&
+Quiet[Check[CheckCNOTtoXX[PickRandomIsometry[2^3,2^3]],error=4;False]]&&
+Quiet[Check[CheckCNOTtoXX[PickRandomIsometry[2^3,2^4]],error=5;False]]&&
+Quiet[Check[CheckCNOTtoXX[randPermutMat[4,4]],error=6;False]]&&
+Quiet[Check[CheckCNOTtoXX[N[randPermutMat[8,8]]],error=7;False]]
+,
+True,
+Print["Error in CheckCNOTtoXX with error message code ",error];False
+]]
+
+TestXXtoCNOT:=Module[{error=0},If[Quiet[Check[CheckXXtoCNOT[PickRandomIsometry[2^2,2^2]],error=1;False]]&&
+Quiet[Check[CheckXXtoCNOT[PickRandomIsometry[2^2,2^3]],error=2;False]]&&
+Quiet[Check[CheckXXtoCNOT[PickRandomIsometry[2^2,2^4]],error=3;False]]&&
+Quiet[Check[CheckXXtoCNOT[PickRandomIsometry[2^3,2^3]],error=4;False]]&&
+Quiet[Check[CheckXXtoCNOT[PickRandomIsometry[2^3,2^4]],error=5;False]]&&
+Quiet[Check[CheckXXtoCNOT[randPermutMat[4,4]],error=6;False]]&&
+Quiet[Check[CheckXXtoCNOT[N[randPermutMat[8,8]]],error=7;False]]
+,
+True,
+Print["Error in CheckXXtoCNOT with error message code ",error];False
+]]
+
+testXXCNOTAll := Module[{},(
+If[TestCNOTtoXX&&TestXXtoCNOT,
+Print["All tests for converting to and from XX gates pass."],,
+ Print["testXXCNOTAll neither returned True nor False"]
+]
+)]
+
+
+(* Unit tests for DecChannelInQCM *)
+
+checkDecChannelInQCM[chan_,t_:Null] := Module[{i, st, outChan, choi1, choi2},
+  If[t===Null,st = DecChannelInQCM[chan],st = DecChannelInQCM[chan,DecomposeIso->"ColumnByColumnDec"]];
+  outChan = CreateOperationFromGateList[st];
+  If[Length[Dimensions[outChan]] == 2, outChan = {outChan}];
+  choi1 = KrausToChoi[chan];
+  choi2 = KrausToChoi[outChan];
+  Norm[Chop[choi1 - choi2]] == 0
+]
+
+testDecChannelInQCM := Module[{error = 0},(
+  If[Quiet[Check[checkDecChannelInQCM[PickRandomChannel[2^2, 2^4, 2^2]], error = 1; False]]&&
+  Quiet[Check[checkDecChannelInQCM[PickRandomChannel[2^1, 2^2, 2^3]],error=2;False]]&&
+  Quiet[Check[checkDecChannelInQCM[PickRandomChannel[2^2, 2^3, 2^2]],error=4;False]]&&
+  Quiet[Check[checkDecChannelInQCM[PickRandomChannel[1, 2^2, 2^2]],error=5;False]]&&
+  Quiet[Check[checkDecChannelInQCM[PickRandomChannel[2^4, 2^4, 1]],error=6;False]]&&
+  Quiet[Check[checkDecChannelInQCM[{{{1/2,1/2},{-(1/2),1/2}},{{1/Sqrt[2],0},{0,1/Sqrt[2]}}},1],error=7;False]]
+  ,
+  True,
+  Print["Error in DecChannelInQCM[] with error message code ",error];False
+  ])
+]
+
+testChannelDecompositions := If[testDecChannelInQCM,Print["All tests for DecChannelInQCM pass."],,
+Print["testChannelDecompositions neither returned True nor False"]]
+
+
+
+(* Unit Tests for DecInstrumentInQCM *)
+
+checkDecInstrumentInQCM[instr_,t_:Null] := Module[{i, st, rho, outInstr, sameAction, partialResultState, outPartialResultState},
+  If[t===Null,st=DecInstrumentInQCM[instr],st=DecInstrumentInQCM[instr,DecomposeIso->"DecIsometryGeneric"]];
+  outInstr = CreateOperationFromGateList[st];
+  If[Length[Dimensions[outInstr]] == 3, outInstr = {outInstr}];
+  If[Length[Dimensions[outInstr]] == 2, outInstr = {{outInstr}}];
+  rho = PickRandomRho[Length[instr[[1]][[1]][[1]]]];
+  sameAction = True;
+  For[i=1, i<=Length[instr], i++,
+    partialResultState = Chop[Sum[instr[[i]][[j]].rho.CT[instr[[i]][[j]]], {j, 1, Length[instr[[i]]]}]];
+    outPartialResultState = Chop[Sum[outInstr[[i]][[j]].rho.CT[outInstr[[i]][[j]]], {j, 1, Length[outInstr[[i]]]}]];
+    If[!(Chop[partialResultState - outPartialResultState] == 0),
+     sameAction = False];
+  ];
+  sameAction
+]
+
+testDecInstrumentInQCM := Module[{error = 0}, (
+  If[Quiet[Check[checkDecInstrumentInQCM[PickRandomInstrument[1,1,2,3]], error = 1; False]]&&
+  Quiet[Check[checkDecInstrumentInQCM[PickRandomInstrument[2^1,2^2,4,2]], error = 2; False]]&&
+  Quiet[Check[checkDecInstrumentInQCM[PickRandomInstrument[2^1,2^2,4,{2,3,5,4}]],error=3;False]]&&
+  Quiet[Check[checkDecInstrumentInQCM[PickRandomInstrument[2^2,2^1,4,{5,2,3,2}]],error=4;False]]&&
+  Quiet[Check[checkDecInstrumentInQCM[PickRandomInstrument[1,2^2,4,4]],error=5;False]]&&
+  Quiet[Check[checkDecInstrumentInQCM[PickRandomInstrument[2^3,2^3,1,2]],error=6;False]]&&
+  Quiet[Check[checkDecInstrumentInQCM[PickRandomInstrument[2^3,2^3,2,1]],error=7;False]]&&
+  Quiet[Check[checkDecInstrumentInQCM[PickRandomInstrument[2^3,2^3,1,1]],error=8;False]]&&
+  Quiet[Check[checkDecInstrumentInQCM[{{{{1,1},{-1,1}},{{1,-1},{1,1}}}/2^(3/2),{{{1,0},{0,1}}/2^(1/2)}},1],error=9;False]]
+  ,
+  True,
+  Print["Error in DecInstrumentInQCM[] with error message code ",error];False
+  ])
+]
+
+testInstrumentDecompositions := If[testDecInstrumentInQCM,Print["All tests for DecInstrumentInQCM pass."],,
+Print["testInstrumentDecompositions neither returned True nor False"]]
+
+
+
 (*Run all tests*)
-runAllTests:=Module[{},(testAllBasicMethods;testUCGs;testAllDiagGateMethods;testIsoSmall;testCCDec;testDec2Qubit;testDecSingleQubit;testQSDAll;testQSD;testStatePreparationAll;testAllMCGMethods;testKnill;testIsometryDecompositions;testStinespring;testPOVM)]
+runAllTests:=Module[{},(testAllBasicMethods;testUCGs;testAllDiagGateMethods;testIsoSmall;testCCDec;testDec2Qubit;testDecSingleQubit;testQSDAll;testQSD;testStatePreparationAll;testAllMCGMethods;testKnill;testIsometryDecompositions;testStinespring;testPOVM;testXXCNOTAll;testChannelDecompositions;testInstrumentDecompositions)]
 
 
 Timing[runAllTests]
