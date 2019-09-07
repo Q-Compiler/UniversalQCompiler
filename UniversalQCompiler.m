@@ -24,6 +24,7 @@ BeginPackage["UniversalQCompiler`",{"QI`"}];
 5. For a gate sequence st, calling SimplifyGateList[XRGatesToCNOTRotations[CNOTRotationsToXXRGates[st]]] should give us back the same gate sequence st again.
 6. Implementation of multi-controlled-Toffoli gates using ancillas to lower the C-NOT count.
 7. [Raban] Extend Stateprepration scheme for small Schmidt rank
+8. [Raban] Remove "\textnormal" for Latex outputs
 *)
 
 (*Methods to handle and simplify gate sequence*)
@@ -1100,7 +1101,7 @@ ToString[TeXForm[DrawCircuitNumberFormat[param,digits]]];
 ToStringStandard[str_]:=ToString[str,FormatType->StandardForm];
 
 wireType[wireIndex_,positionAlongWire_,gridForm_]:=Module[{out,positionMst},
-positionMst=Position[gridForm[[wireIndex,1;;positionAlongWire]],_?(If[Length[#]==0,False,MemberQ[{measType},#[[1]]]]&)];
+positionMst=Position[gridForm[[wireIndex,1;;positionAlongWire]],_?(If[Length[#]==0,False,MemberQ[{measType},#[[1]]]]&),{1}];
 If[Length[positionMst]==0,
 out="\\qw ",
 positionMst=positionMst[[1]][[1]];
