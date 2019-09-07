@@ -3941,7 +3941,7 @@ IsQubitIsometry[v_,methodName_:"UNKNOWN"]:=Module[{numRow,numCol},
   If[IntegerQ[Log2[numRow]],,Throw[StringJoin["The number of rows of the input isometry in the method ",methodName ," is not a power of two."]]];
   If[IntegerQ[Log2[numCol]],,Throw[StringJoin["The number of columns of the input isometry in the method ",methodName ," is not a power of two."]]];
    If[numCol>numRow,Throw[StringJoin["The number of columns of the input matrix in the method ",methodName ," is bigger than the number of rows (i.e., it is not an isometry)."]]];
-  If[isIdentity[ConjugateTranspose[N[v]].N[v]],,Throw[StringJoin["The input matrix in the method ",methodName ," is not an isometry since ConjugateTranspose[v].v]\[NotEqual]Id."]]]; 
+  If[isIdentity[ConjugateTranspose[N[v]].N[v]],,Print[StringJoin["Warning: The input matrix v in the method ",methodName ," is not an isometry up to numerical precision since for m:=ConjugateTranspose[v].v, we have Chop[Norm[m-IdentityMatrix[Length[m]]]]\[NotEqual]0."]]]; 
   ]
   
 IsListFormHelp[gate_,methodName_]:=Module[{},
