@@ -317,9 +317,12 @@ SimplifyGateList[NGateList[st]]
 (*Create an n qubit isometry from list form. Multiplies the unitaries described in the list (in reversed order!)  and outputs the first m columns*)
 (* Use FullSimp\[Rule]False to avoid attempts to use FullSimplify *)
 Options[CreateIsometryFromList]={FullSimp->True};
-CreateIsometryFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{mat,mat2,i,k,ancillain,ancillainnums,ancillainvals,ancillaout,ancillaoutnums,ancillaoutvals,st2,id,rest,n1=n},
+CreateIsometryFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{mat,mat2,i,k,ancillain,ancillainnums,ancillainvals,ancillaout,ancillaoutnums,ancillaoutvals,st2,id,rest,n1=n, mmt2},
   IsListForm[st];
   If[n===Null,n1=NumberOfQubits[ToSimpleGate[st]]];ancillain=SortBy[DeleteDuplicates@Cases[ToSimpleGate[st],{5,_,_}],Last];
+  Print[ancillain];
+  (* Deal with Mmt2 {7,j,i}, if i is in ancillain, we add j *)
+  mmt2 = Case{st, {7,_,_}};
   If[ancillain==={},ancillainnums={},ancillainnums=Transpose[ancillain][[3]];ancillainvals=Transpose[ancillain][[2]]];ancillaout=SortBy[Cases[st,{6,_,_}],Last];
   If[ancillaout==={},ancillaoutnums={},ancillaoutnums=Transpose[ancillaout][[3]];ancillaoutvals=Transpose[ancillaout][[2]]];
   st2=DeleteCases[st,{x_/;x==5,_,_}|{x_/;x==6,_,_}];mat={{1}};k=0;
@@ -386,10 +389,51 @@ Options[NCreateChannelFromList]={POVM->False,DropZero->True};
 NCreateChannelFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=CreateIsometryFromList[NGateList[st],n,{POVM->OptionValue[POVM],DropZero->OptionValue[DropZero]}]
 
 Options[CreateInstrumentFromList]={DropZero->True,FullSimp->True};(* using DropZero here prevents identification using Length[Dimensions[out]], where out is the output of CreateOperationFromGateList *)
-CreateInstrumentFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{mat,i,j,traces,tracesnums,postsel,postselnums,posn,mmt,mmtnums,inst,chanout,st2,st3,digs,dims,n1=n},
-If[n===Null,n1=NumberOfQubits[st]];traces=Cases[st,{4,0,_}];If[traces==={},tracesnums={},tracesnums=Transpose[traces][[3]]];postsel=Cases[st,{6,_,_}];If[postsel==={},postselnums={},postselnums=Transpose[postsel][[3]]];mmt=Cases[st,{4,1,_}];If[mmt==={},mmtnums={},mmtnums=Transpose[mmt][[3]]];If[Dimensions[Intersection[tracesnums,postselnums,mmtnums]]=={0},,Print["CreateInstrumentFromList: Cannot have combinations of postselect on zero/measure/trace on the same qubit."]];inst={};st2=DeleteCases[st,{4,1,_}];
-For[j=1,j<=2^(Length[mmtnums]),j++,digs=IntegerDigits[j-1,2,Length[mmtnums]];st3=st2;For[i=1,i<=Length[mmtnums],i++,st3=Insert[st3,{6,digs[[i]],mmtnums[[i]]},-1]];
-inst=Insert[inst,CreateChannelFromList[st3,n1,{DropZero->OptionValue[DropZero],FullSimp->OptionValue[FullSimp]}],-1]];inst]
+CreateInstrumentFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{mat,i,j,traces,tracesnums,postsel,postselnums,posn,mmt,mmtnums,mmtnums2,inst,chanout,st2,st3,digs,dims,n1=n},
+  If[n===Null,
+    n1=NumberOfQubits[ToSimpleGate[st]]
+  ];
+  traces=Cases[st,{4,0,_}];
+  If[traces==={},
+    tracesnums={},
+    tracesnums=Transpose[traces][[3]]
+  ];
+  postsel=Cases[st,{6,_,_}];
+  If[postsel==={},
+    postselnums={},
+    postselnums=Transpose[postsel][[3]]
+  ];
+  (*This is modified for the new gate Mmt2 {7,j,i}. The program needs to know that j is a classical bit. Mmt1 in the form of {4,1,_} is deleted here later, but {7,j,i} can not because we need to do the bit exchange i->j*)
+  mmt=Cases[st,{4,1,_}];
+  If[mmt==={},
+    mmtnums={},
+    mmtnums=Transpose[mmt][[3]]
+  ];
+  (*
+  mmt2=Cases[st,{7,_,_}];
+  If[mmt2==={},
+    mmtnums2={},
+    mmtnums2=Transpose[mmt2][[2]]
+  ];
+  mmtnums=Join[mmtnums, mmtnums2];
+  *)
+  If[Dimensions[Intersection[tracesnums,postselnums,mmtnums]]=={0},
+    ,
+    Print["CreateInstrumentFromList: Cannot have combinations of postselect on zero/measure/trace on the same qubit."]
+  ];
+  inst={};
+  st2=DeleteCases[st,{4,1,_}];
+  For[j=1,j<=2^(Length[mmtnums]),j++,
+    digs=IntegerDigits[j-1,2,Length[mmtnums]];
+    st3=st2;
+    For[i=1,i<=Length[mmtnums],i++,
+      st3=Insert[st3,{6,digs[[i]],mmtnums[[i]]},-1]
+    ];
+    Print[st3];
+    inst=Insert[inst,CreateChannelFromList[st3,n1,{DropZero->OptionValue[DropZero],FullSimp->OptionValue[FullSimp]}],-1]
+  ];
+  inst
+]
 
 Options[NCreateInstrumentFromList]={DropZero->True};(* using DropZero here prevents identification using Length[Dimensions[out]], where out is the output of CreateOperationFromGateList *)
 NCreateInstrumentFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=CreateInstrumentFromList[NGateList[st],n,{DropZero->OptionValue[DropZero]}]
@@ -1663,24 +1707,34 @@ Options[DecUnitary2Qubits]={UpToDiagonal->False,precision->10^-10,Simp->True,Ful
 (*Except[_?OptionQ] is a trick to allow for optional arguments (together with options). Without this trick, having something like f[x_,y:Null,OptionsPattern[]]:=...
 would give an error calling f[x,option\[Rule]optionValue]*)
 DecUnitary2Qubits[u_,action:Except[_?OptionQ]:Null,OptionsPattern[]]:= Module[{actionQ,diag,st,qBits},
-IsQubitIsometry[u,"DecUnitary2Qubits"];
-qBits=2;
-actionQ=
-Switch[action, 
-Null,Range[qBits], 
-_, action
-];
-If[OptionValue[UpToDiagonal]==True,
-{diag,st}=DecUnitary2QubitsHelp[SimplifyTrigo[u],2,{UpToDiagonal->OptionValue[UpToDiagonal],precision->OptionValue[precision],FullSimp->OptionValue[FullSimp]}];
-st=RelabelQubits[st,{1,2},{2,1}];
-If[actionQ==Range[qBits],,st=RelabelQubits[st,Range[qBits],actionQ]];
-Append[If[OptionValue[Simp],SimplifyGateList[Reverse[st],FullSimp->OptionValue[FullSimp]],Reverse[st]],{-2,diag,actionQ}]
-,
-st=DecUnitary2QubitsHelp[SimplifyTrigo[u],2,{UpToDiagonal->OptionValue[UpToDiagonal],precision->OptionValue[precision],FullSimp->OptionValue[FullSimp]}];
-st=RelabelQubits[st,{1,2},{2,1}];
-If[actionQ==Range[qBits],,st=RelabelQubits[st,Range[qBits],actionQ]];
-If[OptionValue[Simp],SimplifyGateList[Reverse[st],FullSimp->OptionValue[FullSimp]],Reverse[st]]
-]]
+  IsQubitIsometry[u,"DecUnitary2Qubits"];
+  qBits=2;
+  actionQ=
+    Switch[
+      action, 
+      Null,
+      Range[qBits], 
+      _, 
+      action
+  ];
+  If[OptionValue[UpToDiagonal]==True,
+    {diag,st}=DecUnitary2QubitsHelp[
+      SimplifyTrigo[u],
+      2,
+      {UpToDiagonal->OptionValue[UpToDiagonal],
+      precision->OptionValue[precision],
+      FullSimp->OptionValue[FullSimp]}
+    ];
+  st=RelabelQubits[st,{1,2},{2,1}];
+  If[actionQ==Range[qBits],,st=RelabelQubits[st,Range[qBits],actionQ]];
+  Append[If[OptionValue[Simp],SimplifyGateList[Reverse[st],FullSimp->OptionValue[FullSimp]],Reverse[st]],{-2,diag,actionQ}]
+  ,
+  st=DecUnitary2QubitsHelp[SimplifyTrigo[u],2,{UpToDiagonal->OptionValue[UpToDiagonal],precision->OptionValue[precision],FullSimp->OptionValue[FullSimp]}];
+  st=RelabelQubits[st,{1,2},{2,1}];
+  If[actionQ==Range[qBits],,st=RelabelQubits[st,Range[qBits],actionQ]];
+  If[OptionValue[Simp],SimplifyGateList[Reverse[st],FullSimp->OptionValue[FullSimp]],Reverse[st]]
+  ]
+]
 
 (*-------------------------------------------Decomposition of two qubit gates (private) --------------------------------------------*)
 (*ToDo: Make some of the following methods public and tidy up the code (e.g., never use the notation that the first 
@@ -1863,74 +1917,74 @@ Refer- http://arxiv.org/abs/quant-ph/0308045v3 (Small circuit structure in two q
 [Notation for DecUnitary2QubitsHelp is such that the most significant qubit in the two qubit gate is labelled n while the least significant is labelled n-1]*)
 Options[DecUnitary2QubitsHelp] = { UpToDiagonal ->  False, precision ->  10^-10,FullSimp->True};
 DecUnitary2QubitsHelp[u_, n_, OptionsPattern[]]:= Module[{m,det,su,diag,gu,realTraceU,traceFixingMatrix,eigenVals,st,threeCnotsInOutput},
-m={{1,0,0,I},{0,I,1,0},{0,I,-1,0},{1,0,0,-I}}/Sqrt[2];
-det=Simplify[Det[u]];
-su=Simplify[u*ConjSimplify[det^(1/4)]];
-gu=Simplify[Gam[su]];
-eigenVals =  If[OptionValue[FullSimp],FullSimplifyNoRoots[Eigenvalues[gu]],Simplify[Eigenvalues[gu]]];
-(*
-by construction su is an su(4) matrix 
-we now check if su requires 0, 1 or 2 cnots to decompose
-*)
-(*Prop III.1 - no cnots needed if \[Chi][\[Gamma][u]](x) = (x+1)^4 or (x-1)^4*)
-If[ Fold[And, Map[Abs[#-1] < OptionValue[precision] &,N[eigenVals]]] ||  Fold[And,Map[Abs[#+1] < OptionValue[precision]&,N[eigenVals]]], 
-Module[{m1, m2,a1,b1,c1,d1,a2,b2,c2,d2}, 
-If[analyzeAnalyticDecUnitary2Qubits,
-Print["Matrix su in DecUnitary2QubitsHelp (case: zero C-NOTs): ",su]
-];
-{m1, m2} = KronFactorUnitaryDim4[su,FullSimp->OptionValue[FullSimp]];
-{d1,c1,b1,a1} = ZYZDecomposition[m1];
-{d2,c2,b2,a2}= ZYZDecomposition[m2];
-st = {
-{3,b1,n},
-{2,c1,n},
-{3,d1,n},
-{3,b2,n-1},
-{2,c2,n-1},
-{3,d2,n-1}
-};
+  m={{1,0,0,I},{0,I,1,0},{0,I,-1,0},{1,0,0,-I}}/Sqrt[2];
+  det=Simplify[Det[u]];
+  su=Simplify[u*ConjSimplify[det^(1/4)]];
+  gu=Simplify[Gam[su]];
+  eigenVals =  If[OptionValue[FullSimp],FullSimplifyNoRoots[Eigenvalues[gu]],Simplify[Eigenvalues[gu]]];
+  (*
+  by construction su is an su(4) matrix 
+  we now check if su requires 0, 1 or 2 cnots to decompose
+  *)
+  (*Prop III.1 - no cnots needed if \[Chi][\[Gamma][u]](x) = (x+1)^4 or (x-1)^4*)
+  If[ Fold[And, Map[Abs[#-1] < OptionValue[precision] &,N[eigenVals]]] ||  Fold[And,Map[Abs[#+1] < OptionValue[precision]&,N[eigenVals]]], 
+  Module[{m1, m2,a1,b1,c1,d1,a2,b2,c2,d2}, 
+  If[analyzeAnalyticDecUnitary2Qubits,
+  Print["Matrix su in DecUnitary2QubitsHelp (case: zero C-NOTs): ",su]
+  ];
+  {m1, m2} = KronFactorUnitaryDim4[su,FullSimp->OptionValue[FullSimp]];
+  {d1,c1,b1,a1} = ZYZDecomposition[m1];
+  {d2,c2,b2,a2}= ZYZDecomposition[m2];
+  st = {
+  {3,b1,n},
+  {2,c1,n},
+  {3,d1,n},
+  {3,b2,n-1},
+  {2,c2,n-1},
+  {3,d2,n-1}
+  };
 
-If[OptionValue[UpToDiagonal],
-Return[{{1,1,1,1}, st}],
-Return[st]
-];
-];
-];
+  If[OptionValue[UpToDiagonal],
+  Return[{{1,1,1,1}, st}],
+  Return[st]
+  ];
+  ];
+  ];
 
 (*Prop III.2 - one cnot needed if \[Chi][\[Gamma][u]](x) = (x+I)^2(x-I)^2*)
-If[Length[Select[N[eigenVals], Abs[# - I] < OptionValue[precision] &]] == 2 && Length[Select[N[eigenVals], Abs[# + I] < OptionValue[precision] &]] == 2,
-Return[Module[{a,b,c,d,a1,b1,c1,d1,a2,b2,c2,d2,a3,b3,c3,d3,a4,b4,c4,d4},
-If[analyzeAnalyticDecUnitary2Qubits,
-Print["Matrix su in DecUnitary2QubitsHelp (case: one C-NOTs): ",su]
-];
-{a,b,c,d} = TwoQubitFindMatchingProductMatrices[su,CNOTM[1,2,2],OptionValue[precision],OptionValue[FullSimp]];
-{d1,c1,b1,a1} = ZYZDecomposition[a];
-{d2,c2,b2,a2} = ZYZDecomposition[b];
-{d3,c3,b3,a3} = ZYZDecomposition[c];
-{d4,c4,b4,a4} = ZYZDecomposition[d];
-st = {
-{3,b1,n},
-{2,c1,n},
-{3,d1,n},
-{3,b2,n-1},
-{2,c2,n-1},
-{3,d2,n-1},
-{0,n,n-1},
-{3,b3,n},
-{2,c3,n},
-{3,d3,n},
-{3,b4,n-1},
-{2,c4,n-1},
-{3,d4,n-1}
-};
+  If[Length[Select[N[eigenVals], Abs[# - I] < OptionValue[precision] &]] == 2 && Length[Select[N[eigenVals], Abs[# + I] < OptionValue[precision] &]] == 2,
+  Return[Module[{a,b,c,d,a1,b1,c1,d1,a2,b2,c2,d2,a3,b3,c3,d3,a4,b4,c4,d4},
+  If[analyzeAnalyticDecUnitary2Qubits,
+  Print["Matrix su in DecUnitary2QubitsHelp (case: one C-NOTs): ",su]
+  ];
+  {a,b,c,d} = TwoQubitFindMatchingProductMatrices[su,CNOTM[1,2,2],OptionValue[precision],OptionValue[FullSimp]];
+  {d1,c1,b1,a1} = ZYZDecomposition[a];
+  {d2,c2,b2,a2} = ZYZDecomposition[b];
+  {d3,c3,b3,a3} = ZYZDecomposition[c];
+  {d4,c4,b4,a4} = ZYZDecomposition[d];
+  st = {
+  {3,b1,n},
+  {2,c1,n},
+  {3,d1,n},
+  {3,b2,n-1},
+  {2,c2,n-1},
+  {3,d2,n-1},
+  {0,n,n-1},
+  {3,b3,n},
+  {2,c3,n},
+  {3,d3,n},
+  {3,b4,n-1},
+  {2,c4,n-1},
+  {3,d4,n-1}
+  };
 
-If[OptionValue[UpToDiagonal],
-{{1,1,1,1}, st},
-st
-]
-]
-]
-];
+  If[OptionValue[UpToDiagonal],
+  {{1,1,1,1}, st},
+  st
+  ]
+  ]
+  ]
+  ];
 
 (*We now require two C-NOTS*)
 (*
@@ -1938,67 +1992,67 @@ It might be that tr[Gam[su]] is not real
 we can fix this, at the cost of being out by a diagonal gate
 *)
 
-If[Abs[Im[Tr[N[Gam[su]]]]] > OptionValue[precision] && OptionValue[UpToDiagonal],
-traceFixingMatrix = Simplify[RealTrace3[su]];
-su = Simplify[traceFixingMatrix.su];
-,
-traceFixingMatrix = IdentityMatrix[4];
-];
+  If[Abs[Im[Tr[N[Gam[su]]]]] > OptionValue[precision] && OptionValue[UpToDiagonal],
+  traceFixingMatrix = Simplify[RealTrace3[su]];
+  su = Simplify[traceFixingMatrix.su];
+  ,
+  traceFixingMatrix = IdentityMatrix[4];
+  ];
 
-If[Abs[Im[Tr[N[Gam[su]]]]] < OptionValue[precision],
-(*Prop III.3 - two cnot needed if Tr[\[Gamma][u]] is real*)
-Module[{x1,x2,del,phi,eVals,v,a,b,c,d,a1,b1,c1,d1,a2,b2,c2,d2,a3,b3,c3,d3,a4,b4,c4,d4},
-eVals = Sort[If[OptionValue[FullSimp],FullSimplifyNoRoots[Eigenvalues[Gam[su]]],Simplify[Eigenvalues[Gam[su]]]],ComplexOrderingFunction];
-x1=Arg[eVals[[1]]];
-x2=Arg[eVals[[3]]];
-If[OptionValue[FullSimp],
-del=Arg[FullSimplifyNoRoots[eVals[[1]]*eVals[[3]]]]/2;
-phi=Arg[FullSimplifyNoRoots[eVals[[1]]/eVals[[3]]]]/2,del=Arg[Simplify[eVals[[1]]*eVals[[3]]]]/2;
-phi=Arg[Simplify[eVals[[1]]/eVals[[3]]]]/2];
-v=CNOTM[2,1,2].KroneckerProduct[SimplifyTrigo[RotGate[del,3]],SimplifyTrigo[RotGate[phi,1]]].CNOTM[2,1,2];
-If[analyzeAnalyticDecUnitary2Qubits,
-Print["Matrix su in DecUnitary2QubitsHelp (case: two C-NOTs): ",su];
-Print["Matrix v in DecUnitary2QubitsHelp (case: two C-NOTs): ",v]
-];
-{a,b,c,d} = TwoQubitFindMatchingProductMatrices[su,v,OptionValue[precision],OptionValue[FullSimp]];
-{d1,c1,b1,a1} = ZYZDecomposition[a];
-{d2,c2,b2,a2} = ZYZDecomposition[b];
-{d3,c3,b3,a3} = ZYZDecomposition[c];
-{d4,c4,b4,a4} = ZYZDecomposition[d];
-st = {
-{3,b1,n},
-{2,c1,n},
-{3,d1,n},
-{3,b2,n-1},
-{2,c2,n-1},
-{3,d2,n-1},
-{0,n-1,n},
-{3,del,n},
-{1,phi,n-1},
-{0,n-1,n},
-{3,b3,n},
-{2,c3,n},
-{3,d3,n},
-{3,b4,n-1},
-{2,c4,n-1},
-{3,d4,n-1}
-};
-If[OptionValue[UpToDiagonal],
-Return[{Conjugate[Diagonal[traceFixingMatrix]], st}],
-Return[st]
-];
-];
-];
+  If[Abs[Im[Tr[N[Gam[su]]]]] < OptionValue[precision],
+  (*Prop III.3 - two cnot needed if Tr[\[Gamma][u]] is real*)
+  Module[{x1,x2,del,phi,eVals,v,a,b,c,d,a1,b1,c1,d1,a2,b2,c2,d2,a3,b3,c3,d3,a4,b4,c4,d4},
+  eVals = Sort[If[OptionValue[FullSimp],FullSimplifyNoRoots[Eigenvalues[Gam[su]]],Simplify[Eigenvalues[Gam[su]]]],ComplexOrderingFunction];
+  x1=Arg[eVals[[1]]];
+  x2=Arg[eVals[[3]]];
+  If[OptionValue[FullSimp],
+  del=Arg[FullSimplifyNoRoots[eVals[[1]]*eVals[[3]]]]/2;
+  phi=Arg[FullSimplifyNoRoots[eVals[[1]]/eVals[[3]]]]/2,del=Arg[Simplify[eVals[[1]]*eVals[[3]]]]/2;
+  phi=Arg[Simplify[eVals[[1]]/eVals[[3]]]]/2];
+  v=CNOTM[2,1,2].KroneckerProduct[SimplifyTrigo[RotGate[del,3]],SimplifyTrigo[RotGate[phi,1]]].CNOTM[2,1,2];
+  If[analyzeAnalyticDecUnitary2Qubits,
+  Print["Matrix su in DecUnitary2QubitsHelp (case: two C-NOTs): ",su];
+  Print["Matrix v in DecUnitary2QubitsHelp (case: two C-NOTs): ",v]
+  ];
+  {a,b,c,d} = TwoQubitFindMatchingProductMatrices[su,v,OptionValue[precision],OptionValue[FullSimp]];
+  {d1,c1,b1,a1} = ZYZDecomposition[a];
+  {d2,c2,b2,a2} = ZYZDecomposition[b];
+  {d3,c3,b3,a3} = ZYZDecomposition[c];
+  {d4,c4,b4,a4} = ZYZDecomposition[d];
+  st = {
+  {3,b1,n},
+  {2,c1,n},
+  {3,d1,n},
+  {3,b2,n-1},
+  {2,c2,n-1},
+  {3,d2,n-1},
+  {0,n-1,n},
+  {3,del,n},
+  {1,phi,n-1},
+  {0,n-1,n},
+  {3,b3,n},
+  {2,c3,n},
+  {3,d3,n},
+  {3,b4,n-1},
+  {2,c4,n-1},
+  {3,d4,n-1}
+  };
+  If[OptionValue[UpToDiagonal],
+  Return[{Conjugate[Diagonal[traceFixingMatrix]], st}],
+  Return[st]
+  ];
+  ];
+  ];
 
-(*
-Otherwise we need three cnots
-see "http://web.eecs.umich.edu/~imarkov/pubs/jour/pra04-univ.pdf" - Minimal Universal Two-Qubit CNOT -based Circuits Theorem VI.3
-*)
-su = CNOTM[1,2,2].su;
-traceFixingMatrix = Simplify[RealTrace3[su]];
-su = Simplify[traceFixingMatrix.su];
-st = DecUnitary2QubitsHelp[su, n, {precision-> OptionValue[precision], UpToDiagonal->False,FullSimp->OptionValue[FullSimp]}];
-Return[Join[{{3,-Arg[traceFixingMatrix[[1,1]]/traceFixingMatrix[[2,2]]],n-1}, {0,n,n-1}}, st]];
+  (*
+  Otherwise we need three cnots
+  see "http://web.eecs.umich.edu/~imarkov/pubs/jour/pra04-univ.pdf" - Minimal Universal Two-Qubit CNOT -based Circuits Theorem VI.3
+  *)
+  su = CNOTM[1,2,2].su;
+  traceFixingMatrix = Simplify[RealTrace3[su]];
+  su = Simplify[traceFixingMatrix.su];
+  st = DecUnitary2QubitsHelp[su, n, {precision-> OptionValue[precision], UpToDiagonal->False,FullSimp->OptionValue[FullSimp]}];
+  Return[Join[{{3,-Arg[traceFixingMatrix[[1,1]]/traceFixingMatrix[[2,2]]],n-1}, {0,n,n-1}}, st]];
 ];
 
 (*-------------------------------------------Basic helper methods (private) --------------------------------------------*)
@@ -4170,15 +4224,26 @@ CTRLSTM[controls_,stList_, numQubits_, mat_]:=Module[{zeroControls,oneControls,m
   ApplyControl[{gates, multiControls, isoTargets, numQubits}, mat]
 ]
 
+(*Find the input ancilla qubits, the cgs gate with {100,_,_} is treated separately*)
+FindAncillain[st_] := Module[{result, result2, cgsSt},
+  result = Cases[st, {5, _, _}];
+  cgsSt = Cases[st, {100, _, _}];
+  result2 = 
+   DeleteDuplicates @ 
+    Flatten[Map[FindAncillain, #[[3]]] & /@ cgsSt, 2];
+  result = Join[result, result2];
+  Return[result];
+  ]
+
 BoxiTest[st_]:=Module[
   {},
   IsListFormHelp[#, "UNKNOWN"]& /@ st;
   IsListForm[st];
   isAnalyticGate /@ st;
   ListFormToOp[DeleteCases[st,{4,_,_}]];
-  CreateIsometryFromList[DeleteCases[st,{4,_,_}]];
-  CreateInstrumentFromList[st]
+  CreateIsometryFromList[DeleteCases[st,{4,_,_}]]
   (*
+  CreateInstrumentFromList[st]
   *)
 ]
 End[];
