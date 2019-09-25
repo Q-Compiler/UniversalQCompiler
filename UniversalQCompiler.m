@@ -25,6 +25,7 @@ BeginPackage["UniversalQCompiler`",{"QI`"}];
 6. Implementation of multi-controlled-Toffoli gates using ancillas to lower the C-NOT count.
 7. [Raban] Extend Stateprepration scheme for small Schmidt rank
 8. [Raban] Remove "\textnormal" for Latex outputs
+9. In SimplifyGateList, reduce combinations of three rotation gates at the start of a circuit on ancilla qubits to two.
 *)
 
 (*Methods to handle and simplify gate sequence*)
