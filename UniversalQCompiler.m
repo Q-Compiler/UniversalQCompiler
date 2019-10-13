@@ -156,6 +156,8 @@ ApplyControl::usage="TBA"
 FindAncilla::usage="TBA"
 BoxiTest::usage="temp"
 TestCreateIsometryFromList1::usage="TBA"
+CreateIsometryFromList::usage="TBA"
+CreateInstrumentFromList::usage="TBA"
 
 
 Begin["`Private`"];
@@ -382,32 +384,103 @@ NCreateIsometryFromList[st_,n_:Null]:=CreateIsometryFromList[NGateList[st],n]
 
 Options[CreateChannelFromList]={POVM->False,DropZero->True,FullSimp->True};
 CreateChannelFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{mat,i,traces,tracesnums,postsel,postselnums,posn,chanout,st2,dims,n1=n},
-If[Not[OptionValue[POVM]]&&MemberQ[st,{4,1,_}],Print["CreateChannelFromList: measurement gate type found"]];
-If[n===Null,n1=NumberOfQubits[st]];traces=Cases[st,{4,_,_}];If[traces==={},tracesnums={},tracesnums=Transpose[traces][[3]]];postsel=Cases[st,{6,_,_}];If[postsel==={},postselnums={},postselnums=Transpose[postsel][[3]]];If[Dimensions[Intersection[tracesnums,postselnums]]=={0},,Print["CreateChannelFromList: Cannot postselect on zero and measure/trace on the same qubit."]];st2=DeleteCases[st,{4,_,_}];
-mat=CreateIsometryFromList[st2,n1,FullSimp->OptionValue[FullSimp]];
-Print[mat];
-chanout={};posn={};dims={};For[i=1,i<=n1,i++,If[MemberQ[postselnums,i],,If[MemberQ[tracesnums,i],posn=Insert[posn,1,-1];dims=Insert[dims,{1,2},-1],posn=Insert[posn,2,-1];dims=Insert[dims,{2,2},-1]]]];For[i=0,i<=2^(Length[tracesnums])-1,i++,chanout=Insert[chanout,Tensor[BraV[i,2^(Length[tracesnums])],IdentityMatrix[2^(n1-Length[postselnums]-Length[tracesnums])],posn,dims].mat,-1]];
-If[OptionValue[DropZero],For[i=Length[chanout],i>=1,i--,If[Chop[chanout[[i]]]==0*chanout[[i]],chanout=Drop[chanout,{i}]]]];chanout]
+  If[Not[OptionValue[POVM]]&&MemberQ[st,{4,1,_}],
+    Print["CreateChannelFromList: measurement gate type found"]
+  ];
+  If[n===Null,
+    n1=NumberOfQubits[ToSimpleGate[st]]];
+  traces=Cases[st,{4,_,_}];
+  If[traces==={},tracesnums={},
+    tracesnums=Transpose[traces][[3]]
+  ];
+  postsel=Cases[st,{6,_,_}];
+  If[postsel==={},
+    postselnums={},
+    postselnums=Transpose[postsel][[3]]
+  ];
+  If[Dimensions[Intersection[tracesnums,postselnums]]=={0},
+    ,
+    Print["CreateChannelFromList: Cannot postselect on zero and measure/trace on the same qubit."]
+  ];
+  st2=DeleteCases[st,{4,_,_}];
+  mat=CreateIsometryFromList[st2,n1,FullSimp->OptionValue[FullSimp]];
+  chanout={};
+  posn={};
+  dims={};
+  For[i=1,i<=n1,i++,
+    If[MemberQ[postselnums,i],
+    ,
+    If[MemberQ[tracesnums,i],
+      posn=Insert[posn,1,-1];dims=Insert[dims,{1,2},-1],
+      posn=Insert[posn,2,-1];dims=Insert[dims,{2,2},-1]]
+    ]
+  ];
+  For[i=0,i<=2^(Length[tracesnums])-1,i++,
+    chanout=Insert[chanout,Tensor[BraV[i,2^(Length[tracesnums])],IdentityMatrix[2^(n1-Length[postselnums]-Length[tracesnums])],posn,dims].mat,-1]
+  ];
+  If[OptionValue[DropZero],
+    For[i=Length[chanout],i>=1,i--,
+      If[Chop[chanout[[i]]]==0*chanout[[i]],
+        chanout=Drop[chanout,{i}]
+      ]
+    ]
+  ];
+  chanout
+]
 
 Options[NCreateChannelFromList]={POVM->False,DropZero->True};
 NCreateChannelFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=CreateIsometryFromList[NGateList[st],n,{POVM->OptionValue[POVM],DropZero->OptionValue[DropZero]}]
 
 Options[CreateInstrumentFromList]={DropZero->True,FullSimp->True};(* using DropZero here prevents identification using Length[Dimensions[out]], where out is the output of CreateOperationFromGateList *)
 CreateInstrumentFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{mat,i,j,traces,tracesnums,postsel,postselnums,posn,mmt,mmtnums,inst,chanout,st2,st3,digs,dims,n1=n},
-If[n===Null,n1=NumberOfQubits[st]];traces=Cases[st,{4,0,_}];If[traces==={},tracesnums={},tracesnums=Transpose[traces][[3]]];postsel=Cases[st,{6,_,_}];If[postsel==={},postselnums={},postselnums=Transpose[postsel][[3]]];mmt=Cases[st,{4,1,_}];If[mmt==={},mmtnums={},mmtnums=Transpose[mmt][[3]]];If[Dimensions[Intersection[tracesnums,postselnums,mmtnums]]=={0},,Print["CreateInstrumentFromList: Cannot have combinations of postselect on zero/measure/trace on the same qubit."]];inst={};st2=DeleteCases[st,{4,1,_}];
-For[j=1,j<=2^(Length[mmtnums]),j++,digs=IntegerDigits[j-1,2,Length[mmtnums]];st3=st2;For[i=1,i<=Length[mmtnums],i++,st3=Insert[st3,{6,digs[[i]],mmtnums[[i]]},-1]];
-inst=Insert[inst,CreateChannelFromList[st3,n1,{DropZero->OptionValue[DropZero],FullSimp->OptionValue[FullSimp]}],-1]];inst]
+  (*if there is a (7,_,_) gate, add a (4,1,_) gate at the end for correct number of channels. We cannot delete (7,_,_) since they are used in creating the isometry.*)
+  If[n===Null,
+    n1=NumberOfQubits[ToSimpleGate[st]]
+  ];
+  traces=Cases[st,{4,0,_}];
+  If[traces==={},
+    tracesnums={},
+    tracesnums=Transpose[traces][[3]]
+  ];
+  postsel=Cases[st,{6,_,_}];
+  If[postsel==={},
+    postselnums={},
+    postselnums=Transpose[postsel][[3]]
+  ];
+  mmt2=Cases[st, {7,1,2}];
+  pesudoSt=Join[st, mmt2/.{7,x_,_}->{4,1,x}];
+  mmt=Cases[pesudoSt,{4,1,_}];
+  If[mmt==={},
+    mmtnums={},
+    mmtnums=Transpose[mmt][[3]]
+  ];
+  If[Dimensions[Intersection[tracesnums,postselnums,mmtnums]]=={0},
+    ,
+    Print["CreateInstrumentFromList: Cannot have combinations of postselect on zero/measure/trace on the same qubit."]
+  ];
+  inst={};
+  st2=DeleteCases[st,{4,1,_}];
+  For[j=1,j<=2^(Length[mmtnums]),j++,
+    digs=IntegerDigits[j-1,2,Length[mmtnums]
+  ];
+  st3=st2;
+  For[i=1,i<=Length[mmtnums],
+    i++,st3=Insert[st3,{6,digs[[i]],mmtnums[[i]]},-1]
+  ];
+  inst=Insert[inst,CreateChannelFromList[st3,n1,{DropZero->OptionValue[DropZero],FullSimp->OptionValue[FullSimp]}],-1]];
+  inst
+]
 
 Options[NCreateInstrumentFromList]={DropZero->True};(* using DropZero here prevents identification using Length[Dimensions[out]], where out is the output of CreateOperationFromGateList *)
 NCreateInstrumentFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=CreateInstrumentFromList[NGateList[st],n,{DropZero->OptionValue[DropZero]}]
 
 (*ToDo: Improve efficiency by implementing the application of C-NOTs and single-qubit rotations efficiently*)
 Options[CreateOperationFromGateList]={FullSimp->True};
-CreateOperationFromGateList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{four0s,four1s},four1s=MemberQ[st,{4,1,_}];
+CreateOperationFromGateList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{four0s,four1s},four1s=(MemberQ[st,{4,1,_}] || MemberQ[st,{7,_,_}]);
 If[four1s,CreateInstrumentFromList[st,n,{DropZero->False,FullSimp->OptionValue[FullSimp]}],four0s=MemberQ[st,{4,0,_}];
 If[four0s,CreateChannelFromList[st,n,FullSimp->OptionValue[FullSimp]],CreateIsometryFromList[st,n,FullSimp->OptionValue[FullSimp]]]]]
 
-NCreateOperationFromGateList[st_,n_: Null]:=Module[{four0s,four1s},four1s=MemberQ[st,{4,1,_}];
+NCreateOperationFromGateList[st_,n_: Null]:=Module[{four0s,four1s},four1s=(MemberQ[st,{4,1,_}] || MemberQ[st,{7,_,_}]);
 If[four1s,NCreateInstrumentFromList[st,n,DropZero->False],four0s=MemberQ[st,{4,0,_}];
 If[four0s,NCreateChannelFromList[st,n],NCreateIsometryFromList[st,n]]]]
 
@@ -4058,7 +4131,7 @@ Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,r
             ]
         ]  (* end whether reuse qubit *)
       ]   (* end which decomposition *)
-  ];  (* end for loop *)
+  ];  (* end for the loop *)
 
 
   DecMethod=ChooseDecMethod[OptionValue[DecomposeLastIso]];
@@ -4201,10 +4274,8 @@ BoxiTest[st_]:=Module[
   IsListForm[st];
   isAnalyticGate /@ st;
   ListFormToOp[DeleteCases[st,{labelMmt,_,_}]];
-  CreateIsometryFromList[DeleteCases[st,{labelMmt,_,_}]]
-  CreateChannelFromList[st]
-  (*
-  *)
+  CreateChannelFromList[st];
+  CreateInstrumentFromList[st]
 ]
 
 (*##########################################################*)
@@ -4216,7 +4287,7 @@ TestCreateIsometryFromList1[] := Module[{m, n, check, krausList, st1, m1},
   (* no ancilla*)
   check = True;
   st1 = MeasuredQCM[krausList, DecomposeIso -> "DecIsometry", 
-    DoNotReuseAncilla -> True];
+    DoNotReuseAncilla -> False];
   result = CreateIsometryFromList[DeleteCases[st1, {labelMmt, _, _}]];
   {m1, m2} = Partition[result, n];
   m1 = m1/(m1[[1,1]]/krausList[[1,1,1]]);
