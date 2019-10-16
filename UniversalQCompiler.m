@@ -150,7 +150,7 @@ ReducedCSDSplit::usage="TBA"
 DecChannelRecursively::usage="TBA"
 MeasuredQCM::usage="TBA"
 CTRLSTM::usage="TBA"
-RemoveUnusedQubits::usage="TBA"
+RepalceQubitsInd::usage="TBA"
 CreateCompactIsometryFromList::usage="TBA"
 ApplyControl::usage="TBA"
 FindAncilla::usage="TBA"
@@ -324,7 +324,7 @@ SimplifyGateList[NGateList[st]]
 Options[CreateIsometryFromList]={FullSimp->True};
 CreateIsometryFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{mat,mat2,i,k,ancillain,ancillainnums,ancillainvals,ancillaout,ancillaoutnums,ancillaoutvals,st2,id,rest,n1=n},
   IsListForm[st];
-  If[n===Null,n1=NumberOfQubits[ToSimpleGate[st]]];ancillain=SortBy[FindAncilla[st],Last];
+  If[n===Null,n1=NumberOfQubits[st]];ancillain=SortBy[FindAncilla[st],Last];
   (* Deal with Mmt2 {labelMmt2,j,i}, if i is in ancillain, we add j *)
   If[ancillain==={},ancillainnums={},ancillainnums=Transpose[ancillain][[3]];ancillainvals=Transpose[ancillain][[2]]];ancillaout=SortBy[Cases[st,{6,_,_}],Last];
   If[ancillaout==={},ancillaoutnums={},ancillaoutnums=Transpose[ancillaout][[3]];ancillaoutvals=Transpose[ancillaout][[2]]];
@@ -388,7 +388,7 @@ CreateChannelFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{ma
     Print["CreateChannelFromList: measurement gate type found"]
   ];
   If[n===Null,
-    n1=NumberOfQubits[ToSimpleGate[st]]];
+    n1=NumberOfQubits[st]];
   traces=Cases[st,{4,_,_}];
   If[traces==={},tracesnums={},
     tracesnums=Transpose[traces][[3]]
@@ -435,7 +435,7 @@ Options[CreateInstrumentFromList]={DropZero->True,FullSimp->True};(* using DropZ
 CreateInstrumentFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{mat,i,j,traces,tracesnums,postsel,postselnums,posn,mmt,mmtnums,inst,chanout,st2,st3,digs,dims,n1=n},
   (*if there is a (7,_,_) gate, add a (4,1,_) gate at the end for correct number of channels. We cannot delete (7,_,_) since they are used in creating the isometry.*)
   If[n===Null,
-    n1=NumberOfQubits[ToSimpleGate[st]]
+    n1=NumberOfQubits[st]
   ];
   traces=Cases[st,{4,0,_}];
   If[traces==={},
@@ -2310,14 +2310,21 @@ If[Chop[Mod[N[st[[2]]],2Pi]]==0,True,False,Throw[StringForm["Error: rotIsZero di
 )]
 
 (*Finds the highest qubit number in st (on which is acted non trivially)*)
-NumberOfQubits[st_]:=Module[{},(
-If[st=={},0,
-Max[Map[ If[#[[1]] == -1 || #[[1]] == 0, 
-Max[#[[2]], #[[3]]],
-If[#[[1]]==-2,Max[#[[3]]],
- #[[3]]]] &  ,st]]
- ]
- )]
+NumberOfQubits[st_]:=Module[{},
+  If[st == {}, 0, Max[
+    Which[
+      #[[1]] == labelCZ || #[[1]] == labelCNOT,
+      Max[#[[2]],
+        #[[3]]],
+      #[[1]] == labelDiagGate,
+      Max[#[[3]]],
+      #[[1]] == labelCTRLST,
+      Max[Max[Flatten[#[[2]], 1]], NumberOfQubits[ToSimpleGate[{#}]]],
+      True,
+      #[[3]]
+    ]& /@ st]
+  ]
+]
  
  (*------------------------------------------- Adapted matrix decompositions (private)--------------------------------------------*)
 
@@ -4054,7 +4061,7 @@ Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,r
   If[m<n, loopNum = k; l=n-m,loopNum = n+k-m-1;l=1];
   v =  Flatten[krausList,1];
   qList = {v};
-  gateSequence = {};
+  gateSequence = Table[{5,0,i},{i,loopNum}];
 
   For[i=1,i<=loopNum,i++,
     Which[
@@ -4167,15 +4174,12 @@ FindUsedBits[st_]:= Module[{QubitsLabel,implementedGate},
 ]
 
 (*Remove unused qubits in st: e.g. qubits{2,5,1}->qubits{2,3,1}*)
-RemoveUnusedQubits[st_] := Module[{oldQubitsLabel, newQubitsLabel, asso},
+RepalceQubitsInd[st_, asso_] := Module[{oldQubitsLabel, newQubitsLabel},
   implementedGate={labelDiagGate,labelCZ,labelCNOT,labelRX,labelRY,labelRZ,labelMmt,labelInit,labelPostSelect};
   If[
     Not[AllTrue[st, MemberQ[implementedGate, #[[1]]] &]],
-    Throw[StringForm["Gate type not implemented in RemoveUnusedQubits"]],
+    Throw[StringForm["Gate type not implemented in RepalceQubitsInd"]],
   ];
-  oldQubitsLabel=FindUsedBits[st];
-  newQubitsLabel=Range[Length[oldQubitsLabel]];
-  asso=AssociationThread[oldQubitsLabel -> newQubitsLabel];
   Map[
     If[MemberQ[{labelDiagGate,labelCZ,labelCNOT}, #[[1]]], 
       {#[[1]], #[[2]]/.asso, #[[3]]/.asso},
@@ -4185,8 +4189,9 @@ RemoveUnusedQubits[st_] := Module[{oldQubitsLabel, newQubitsLabel, asso},
 ]
 
 (*Create a compact isometry with all not used qubits neglected.*)
-CreateCompactIsometryFromList[st_] := Module[{},
-  Return[CreateIsometryFromList[RemoveUnusedQubits[st]]];
+CreateCompactIsometryFromList[st_, targetQubits_] := Module[{asso, st2},
+  asso = AssociationThread[Sort[targetQubits] -> Range[Length[targetQubits]]];
+  Return[CreateIsometryFromList[RepalceQubitsInd[st, asso]]];
 ]
 
 (*If the gate is labelCTRLST gate, this function maps all the gate in to a gate list to perform some validity check like NumberOfQubits*)
@@ -4199,6 +4204,22 @@ ToSimpleGate[st_] := Module[{},
       )&,  (*This function acts on each gate in the st*)
     st],
   1]
+]
+
+BoxiNumberOfQubits[st_] := Module[{},
+  If[st == {}, 0, Max[
+    Which[
+      #[[1]] == labelCZ || #[[1]] == labelCNOT,
+      Max[#[[2]],
+        #[[3]]],
+      #[[1]] == labelDiagGate,
+      Max[#[[3]]],
+      #[[1]] == labelCTRLST,
+      Max[Max[Flatten[#[[2]], 1]], BoxiNumberOfQubits[ToSimpleGate[{#}]]],
+      True,
+      #[[3]]
+    ]& /@ st]
+  ]
 ]
 
 (*Each gate matrix must be a m to n qubits isometry of the same size with m<n
@@ -4229,7 +4250,7 @@ ApplyControl[ucg_, mat_] :=
   mat2 = Flatten[#, 1]& @ ExchangeSystems[Partition[mat, 1], newOrder, 
  ConstantArray[2, Length[newOrder]]];
   (*If n>m （isometry), many entries can be neglected*)
-  targetMats = Take[Partition[mat, 2^m], ;; ;;2^(n-m)]; (*only m<n*)
+  targetMats = Take[Partition[mat2, 2^m], ;; ;;2^(n-m)]; (*only m<n*)
   (*copy the gate matrix 2^Length[ids] times, where ids are the qubits don't belong to targets or controls*)
   gateMats = Flatten[ConstantArray[#, 2^(Length@ids)] & /@ gates ,1];
   (*Mutiply two list of matrices*)
@@ -4240,10 +4261,37 @@ ApplyControl[ucg_, mat_] :=
   Return[mat3];
 ]
 
-CTRLSTM[controls_,stList_, numQubits_, mat_]:=Module[{zeroControls,oneControls,multiControls, gates, isoTargets},
+CTRLSTM[controls_,stList_, numQubits_, mat_]:=Module[{zeroControls,oneControls,multiControls,gates,isoTargets,m,n,idmat,idiso,pos,toAdd,controlqubit},
   {zeroControls,oneControls,multiControls}=controls;
-  gates = CreateCompactIsometryFromList[#] & /@ stList;
+  (* Pickout qubits that the controled gates act on and create the correponding small isometry. *)
   isoTargets = DeleteDuplicates @ Flatten[FindUsedBits /@ stList];
+  gates = CreateCompactIsometryFromList[#, isoTargets] & /@ stList;
+  (*insert identity isometry to convert zeroControls and oneControls to multiControls.*)
+  {m,n} = Dimensions[gates[[1]]];
+  idmat = IdentityMatrix[Min[m, n]];
+  idiso = Flatten[ConstantArray[idmat, 2^Abs[Log2[m] - Log2[n]]], 1];
+  If[Length[zeroControls]>0,
+    Do[
+      multiControls = Sort@Append[multiControls, controlqubit];
+      pos = FirstPosition[multiControls, controlqubit][[1]];
+      toAdd = ConstantArray[idiso, 2^(Length[multiControls] - pos)];
+      gates = Join[#, toAdd] & /@ Partition[gates, 2^(Length[multiControls] - pos)];
+      gates = Flatten[gates, 1]
+      ,
+      {controlqubit, zeroControls}
+    ]
+  ];
+  If[Length[oneControls]>0,
+    Do[
+      multiControls = Sort@Append[multiControls, controlqubit];
+      pos = FirstPosition[multiControls, controlqubit][[1]];
+      toAdd = ConstantArray[idiso, 2^(Length[multiControls] - pos)];
+      gates = Join[toAdd, #] & /@ Partition[gates, 2^(Length[multiControls] - pos)];
+      gates = Flatten[gates, 1]
+      ,
+      {controlqubit, oneControls}
+    ]
+  ];
   ApplyControl[{gates, multiControls, isoTargets, numQubits}, mat]
 ]
 
@@ -4266,7 +4314,7 @@ FindAncilla[st_] :=
    {gate, st}
    ];
   Return[result]
-  ]
+]
 
 BoxiTest[st_]:=Module[
   {},
@@ -4274,20 +4322,23 @@ BoxiTest[st_]:=Module[
   IsListForm[st];
   isAnalyticGate /@ st;
   ListFormToOp[DeleteCases[st,{labelMmt,_,_}]];
+  CreateIsometryFromList[DeleteCases[st,{labelMmt,_,_}]]
+  (*
   CreateChannelFromList[st];
   CreateInstrumentFromList[st]
+  *)
 ]
 
 (*##########################################################*)
 
-TestCreateIsometryFromList1[] := Module[{m, n, check, krausList, st1, m1},
+TestCreateIsometryFromList1[decmeth_,useanci_] := Module[{m, n, check, krausList, st1, m1},
   m = 2;
   n = 4;
   krausList = RPickRandomChannel[m, n, 2];
   (* no ancilla*)
   check = True;
-  st1 = MeasuredQCM[krausList, DecomposeIso -> "DecIsometry", 
-    DoNotReuseAncilla -> False];
+  st1 = MeasuredQCM[krausList, DecomposeIso -> decmeth,
+    DoNotReuseAncilla -> useanci];
   result = CreateIsometryFromList[DeleteCases[st1, {labelMmt, _, _}]];
   {m1, m2} = Partition[result, n];
   m1 = m1/(m1[[1,1]]/krausList[[1,1,1]]);
@@ -4295,9 +4346,8 @@ TestCreateIsometryFromList1[] := Module[{m, n, check, krausList, st1, m1},
   If[isZeroMatrix[Chop[m1-krausList[[1]]]], ,check=False];
   If[isZeroMatrix[Chop[m2-krausList[[2]]]], ,check=False];
   If[check, ,"Error in QR dec without ancilla"];
-
   Return[check]
-  ]
+]
 
 TestCreateIsometryFromList2[] := Module[{m, n, check, krausList, st1, m1},
   m = 2;
@@ -4306,7 +4356,7 @@ TestCreateIsometryFromList2[] := Module[{m, n, check, krausList, st1, m1},
   Print[krausList];
   (* with ancilla*)
   check = True;
-  st1 = MeasuredQCM[krausList, DecomposeIso -> "DecIsometry"];
+  st1 = MeasuredQCM[krausList, DecomposeIso -> "QSD"];
   result = CreateIsometryFromList[DeleteCases[st1, {labelMmt, _, _}]];
   {m1, m2} = Partition[result, n];
   m1 = m1/(m1[[1,1]]/krausList[[1,1,1]]);
