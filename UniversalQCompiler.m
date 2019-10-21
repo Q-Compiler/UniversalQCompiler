@@ -158,6 +158,7 @@ BoxiTest::usage="temp"
 TestCreateIsometryFromList1::usage="TBA"
 CreateIsometryFromList::usage="TBA"
 CreateInstrumentFromList::usage="TBA"
+TestCreateOperationFromGateList::usage="TBA"
 
 
 Begin["`Private`"];
@@ -326,7 +327,8 @@ CreateIsometryFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{m
   IsListForm[st];
   If[n===Null,n1=NumberOfQubits[st]];ancillain=SortBy[FindAncilla[st],Last];
   (* Deal with Mmt2 {labelMmt2,j,i}, if i is in ancillain, we add j *)
-  If[ancillain==={},ancillainnums={},ancillainnums=Transpose[ancillain][[3]];ancillainvals=Transpose[ancillain][[2]]];ancillaout=SortBy[Cases[st,{6,_,_}],Last];
+  If[ancillain==={},ancillainnums={},ancillainnums=Transpose[ancillain][[3]];ancillainvals=Transpose[ancillain][[2]]];
+  ancillaout=SortBy[Cases[st,{6,_,_}],Last];
   If[ancillaout==={},ancillaoutnums={},ancillaoutnums=Transpose[ancillaout][[3]];ancillaoutvals=Transpose[ancillaout][[2]]];
   st2=DeleteCases[st,{x_/;x==5,_,_}|{x_/;x==6,_,_}];mat={{1}};k=0;
   For[i=1,i<=n1,i++,
@@ -447,7 +449,7 @@ CreateInstrumentFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[
     postselnums={},
     postselnums=Transpose[postsel][[3]]
   ];
-  mmt2=Cases[st, {7,1,2}];
+  mmt2=Cases[st, {7,_,_}];
   pesudoSt=Join[st, mmt2/.{7,x_,_}->{4,1,x}];
   mmt=Cases[pesudoSt,{4,1,_}];
   If[mmt==={},
@@ -4045,7 +4047,8 @@ Module[{k,n,e2n,m,DecMethod,q,v,r,rList,q1,q2,gateSequence},
   ]
 ]
 
-MeasuredQCM[krausList_,OptionsPattern[{DecomposeIso->"QSD",DecomposeLastIso->"DecIsometry",DoNotReuseAncilla->False}]]:=
+Options[MeasuredQCM]={DecomposeIso->"QSD", DecomposeLastIso->"DecIsometry", DoNotReuseAncilla->False}
+MeasuredQCM[krausList_,OptionsPattern[]]:=
 (*Recursively decompose a list of 2^k Kraus operators into an m x n Isometry and two list of Krau operators controlled by the measured result after the isometry;
 Input: a list of kraus operators {K1,K2,...K_(2^k)};
 Output: {{st[r1]} , {st[r21],st[r22]} , {st[r31],st[r32],st[r33],st[r34]} , ..., {st[q1}, st[q2], ..., st[q_(2^k)]}}, where st[g] is the gate sequence of gate g.
@@ -4096,7 +4099,7 @@ Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,r
             gateSequence=Join[gateSequence,
               {
                 CTRLST[{i},{},Range[1,i-1],
-                  Map[DecMethod[#,action=Range[k+l+1,k+l+m]]&,vList]
+                  Map[DecMethod[#,action=Range[loopNum+l+1,loopNum+l+m]]&,vList]
                 ],
                 CTRLST[{},{},Join[Range[1,i-1],Range[loopNum+l+1,loopNum+l+m]],
                   Map[DecMethod[#,action={i}]&,rList]
@@ -4146,6 +4149,9 @@ Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,r
     CTRLST[{},{},Range[1,loopNum],
     Map[DecMethod[#,Range[loopNum+1,loopNum+l+m]]&, qList]
     ]
+  ];
+  If[n <= m,
+    gateSequence = Join[gateSequence, Table[{4, 1, i}, {i, loopNum+1, k}]]
   ];
   Return[gateSequence]
 ]
@@ -4229,7 +4235,7 @@ ucg: {gates, controls, isoTargets, numQubits}, where gates is a list of isometry
 mat: a two dimensional matrix, can be a state or operator
 *)
 ApplyControl[ucg_, mat_] := 
- Module[{gates, controls, isoTargets, numQubits, ids,m,targetMats,gateMats,newOrder, mat2, matlist, mat3},
+ Module[{gates, controls, isoTargets, numQubits, ids,m,targetMats,gateMats,newOrder,asso, mat2, matlist, mat3},
   {gates, controls, isoTargets, numQubits} = ucg;
   {n,m} = Log2[Dimensions[gates[[1]]]];
   (*Validity check*)
@@ -4243,12 +4249,12 @@ ApplyControl[ucg_, mat_] :=
   ids = Complement[Range @ numQubits, controls, isoTargets];
   (*Find new order and check duplication: the new order is that the most significant qubits control and the most insignificant qubits are controlled*)
   newOrder = Flatten[{controls, ids, isoTargets}];
+  asso = AssociationThread[newOrder -> Table[n, {n, numQubits}]];
   If[Length @ Part[Select[Tally @ newOrder, Part[#, 2] > 1 &], All, 1]>0,
     Throw[StringForm["There is duplication of the qubits indices in controls and isoTargets."]],
   ];
   (*Permute the rows of mat, here is a trick, ExchangeSystems doesn't work for isometry, so I use Partition to make it "looks like" a state, and only do row permuation*)
-  mat2 = Flatten[#, 1]& @ ExchangeSystems[Partition[mat, 1], newOrder, 
- ConstantArray[2, Length[newOrder]]];
+  mat2 = Flatten[#, 1]& @ ExchangeSystems[Partition[mat, 1], (Table[n, {n, numQubits}]/.asso), ConstantArray[2, Length[newOrder]]];
   (*If n>m （isometry), many entries can be neglected*)
   targetMats = Take[Partition[mat2, 2^m], ;; ;;2^(n-m)]; (*only m<n*)
   (*copy the gate matrix 2^Length[ids] times, where ids are the qubits don't belong to targets or controls*)
@@ -4331,43 +4337,40 @@ BoxiTest[st_]:=Module[
 
 (*##########################################################*)
 
-TestCreateIsometryFromList1[decmeth_,useanci_] := Module[{m, n, check, krausList, st1, m1},
-  m = 2;
-  n = 4;
-  krausList = RPickRandomChannel[m, n, 2];
+TestCreateIsometryFromList1[m_,n_,k_, decmeth_,useanci_] := Module[{check, krausList, gatelist, matList},
+  krausList = RPickRandomChannel[2^m, 2^n, 2^k];
   (* no ancilla*)
   check = True;
-  st1 = MeasuredQCM[krausList, DecomposeIso -> decmeth,
-    DoNotReuseAncilla -> useanci];
-  result = CreateIsometryFromList[DeleteCases[st1, {labelMmt, _, _}]];
-  {m1, m2} = Partition[result, n];
-  m1 = m1/(m1[[1,1]]/krausList[[1,1,1]]);
-  m2 = m2/(m2[[1,1]]/krausList[[2,1,1]]);
-  If[isZeroMatrix[Chop[m1-krausList[[1]]]], ,check=False];
-  If[isZeroMatrix[Chop[m2-krausList[[2]]]], ,check=False];
+  gatelist = MeasuredQCM[krausList, DecomposeIso -> decmeth,
+    DoNotReuseAncilla -> Not[useanci]];
+  result = CreateIsometryFromList[DeleteCases[gatelist, {labelMmt, _, _}]];
+  channout = Partition[result, 2^n];
+  For[i=1, i<=2^k, i++,
+    mat1 = channout[[i]];
+    mat2 = krausList[[i]];
+    mat1 = mat1/mat1[[1,1]] * mat2[[1,1]];
+    If[isZeroMatrix[Chop[mat1-mat2]], ,check=False];
+  ]
   If[check, ,"Error in QR dec without ancilla"];
   Return[check]
 ]
 
-TestCreateIsometryFromList2[] := Module[{m, n, check, krausList, st1, m1},
-  m = 2;
-  n = 4;
-  krausList = RPickRandomChannel[m, n, 2];
-  Print[krausList];
-  (* with ancilla*)
+TestCreateOperationFromGateList[m_,n_,k_,decMeth_,useAncilla_] := Module[{check, krausList, gatelist, mat1,mat2},
   check = True;
-  st1 = MeasuredQCM[krausList, DecomposeIso -> "QSD"];
-  result = CreateIsometryFromList[DeleteCases[st1, {labelMmt, _, _}]];
-  {m1, m2} = Partition[result, n];
-  m1 = m1/(m1[[1,1]]/krausList[[1,1,1]]);
-  m2 = m2/(m2[[1,1]]/krausList[[2,1,1]]);
-  Print[m1];
-  If[isZeroMatrix[Chop[m1-krausList[[1]]]], ,check=False];
-  If[isZeroMatrix[Chop[m2-krausList[[2]]]], ,check=False];
-  If[check, ,"Error in QR dec without ancilla"];
-
+  krausList = RPickRandomChannel[2^m, 2^n, 2^k];
+  gatelist = MeasuredQCM[krausList, DecomposeIso->decMeth, DoNotReuseAncilla->Not[useAncilla]];
+  Print[gatelist];
+  channout = CreateOperationFromGateList[gatelist][[;;,1]];
+  Print[CreateOperationFromGateList[gatelist]];
+  For[i=1,i<=2^k,i++,
+    mat1 = channout[[i]];
+    mat2 = krausList[[i]];
+    mat1 = mat1/mat1[[1,1]] * mat2[[1,1]];
+    If[isZeroMatrix[Chop[mat1-mat2]], ,check=False]
+  ];
+  If[check, ,"Error in creating operation from the MeasuredQCM gate list"];
   Return[check]
-  ]
+]
 (*####################################################################*)
 
 End[];
