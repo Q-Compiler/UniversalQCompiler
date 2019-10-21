@@ -9,6 +9,7 @@ UniversalQCompiler provides a Mathematica package that allows to decompose gener
 *  Drawing quantum circuits within Mathematica
 *  Exporting quantum circuits to LATEX
 *  Running quantum circuits on the IBM Q Experience (using the OpenQASM converter)
+* Compilation for trapped ions, i.e., converting between gate sequences using CNOT (and single-qubit rotation) to those that use Molmer-Sorensen gates 
 
 A detailed documentation of the Mathematica package can be found on our [webpage](http://www-users.york.ac.uk/~rc973/UniversalQCompiler.html). The notebook Examples.nb helps the user to get started quickly and provides a short overview over the methods provided by UniversalQCompiler.
 
@@ -54,10 +55,11 @@ The first release of UniversalQCompiler (v0.1) was developed by Raban Iten (ETH 
 * Oliver Reardon-Smith added functionality to cope with small cases, wrote the first version of the visualisation code and implemented several bug fixes.
 * Ethan Redmond added functionality to compute the Knill decomposition and do state preparation.
 * Ravjot Singh Kohli wrote the first version of the code for decomposing isometries with the Column-by-Column decomposition.
+* Gabrielle Pauvert added functionality to decompose instruments
 
 Luca Mondada worked on the code as a semester student at the Institute for Theoretical Physics at ETH Zürich under supervision of Raban Iten.
 
-Ravjot Singh Kohli and Ethan Redmond worked on the code while summer students in the Department of Mathematics at the University of York under supervision of Roger Colbeck.
+Ravjot Singh Kohli, Ethan Redmond and Gabrielle Pauvert worked on the code while summer students in the Department of Mathematics at the University of York under supervision of Roger Colbeck.
 
 ## Mathematica to OpenQASM converter
 A simple-to-use python script converts the Mathematica output gate sequences in list format (not containing diagonal gates, ancilla markers or post selection operations) into OpenQASM, the Quantum Assembly Language used among others by the IBM Q Experience. The converted outputs can be used directly as input for the IBM quantum computers. Note that this script requires Python version 3 and the projectq package.
