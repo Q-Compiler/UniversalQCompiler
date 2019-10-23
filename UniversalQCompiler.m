@@ -185,7 +185,7 @@ DecChannelRecursively::usage="DecChannelRecursively[krausList] recursively decom
 MeasuredQCM::usage="MeasuredQCM[krausList] decomposes a list of 2^k Kraus operators into elementry gates and measurement operators."
 CTRLSTM::usage="CTRLSTM[controls, stList, numQubits, mat] applies a controlled gate sequence to a matrix."
 RepalceQubitsInd::usage="RepalceQubitsInd[st, asso] replaces the label of qubits according to the association."
-ApplyControlledGate::usage="ApplyControlledGate[ucg, mat] applies a list of controlled isometries to a matrix."
+ApplyMultiControlledGate::usage="ApplyMultiControlledGate[ucg, mat] applies a list of controlled isometries to a matrix."
 FindAncilla::usage="FindAncilla[st] finds the input ancilla qubits. It will dig into the sub sequence inside a control gate sequence and also take care of the MeasType2 gate."
 
 Begin["`Private`"];
@@ -4361,14 +4361,14 @@ NearbyIsometry[iso_] := Module[{i,u,v,w},
 
 (* New gate types *)
 
-measType2=7;
-controlledStType=100;
+measType2 = 7;
+controlledStType = 100;
 
 
 (* New gate functions *)
 
-Mmt2[j_,i_]:={measType2,j,i};
-CTRLST[z_,o_,u_,stList_]:=Module[{}, Return[{controlledStType, {z,o,u}, stList}]]
+Mmt2[j_,i_] := {measType2,j,i};
+CTRLST[z_,o_,u_,stList_] := Module[{}, Return[{controlledStType, {z,o,u}, stList}]]
 
 
 (* Functions for MeasuredQCM *)
@@ -4380,12 +4380,12 @@ Input: a rectangular matrix V=[V1:V2] with an even number of rows;
 Output: {R,{Q1,Q2}} where R=[R1:R2] is an isometry and V1=Q1*R1, V2=Q2*R2; 
 *)
 QRSplit[v_]:=
-  Module[{v1, v2,q1,q2,r1,r2},
+  Module[{v1, v2, q1, q2, r1, r2},
   If[!EvenQ[Length[v]], Throw[Stringform["The number of rows has to be even for QRSplit."]]];
   {v1,v2} = Partition[v, Length[v]/2];
   {q1,r1} = QRDecomposition[v1];
   {q2,r2} = QRDecomposition[v2];
-  Return[{Join[r1,r2],{Transpose[q1],Transpose[q2]}}]
+  Return[{Join[r1,r2], {Transpose[q1],Transpose[q2]}}]
 ]
 
 (*
@@ -4398,7 +4398,7 @@ If EfficientRepresentation->False, it returns three matrix m1,m2,m3 so that m1*m
 If EfficiqentRepresentation->True, it only returns v, a list of diagonal elements c and s and {u1, u2}
 *)
 ReducedCSDSplit[q_, OptionsPattern[EfficientRepresentation->False]] :=
-Module[{n,m, u1,u2,s,c,v,q1,q2,x, r,reducedDim,cDial},
+Module[{n, m, u1, u2, s, c, v, q1, q2, x, r, reducedDim, cDial},
   If[!EvenQ[Length[q]], Throw[Stringform["The number of rows has to be even for ReducedCSDSplit."]]];
   {n,m}=Dimensions[q];
   If[2*m>n, Throw[Stringform["The input has to be an isometry with 2m<=n, where m, n are the nunber of columns and rows in the matrix representation."]]];
@@ -4406,8 +4406,8 @@ Module[{n,m, u1,u2,s,c,v,q1,q2,x, r,reducedDim,cDial},
   {q1,q2} = Partition[q, Length[q]/2];
 
   (* calculate reduced u2 and s *)
-  {u2,s,v} =  SingularValueDecomposition[q2];
-  reducedDim =Dimensions[q1][[2]];
+  {u2,s,v} = SingularValueDecomposition[q2];
+  reducedDim = Dimensions[q1][[2]];
   u2 = u2[[All,1;;reducedDim]]; (* Cut unnecessary columns *)
   s = s[[1;;reducedDim,1;;reducedDim]]; (* Cut zeros *)
 
@@ -4470,8 +4470,8 @@ Module[{k,n,e2n,m,DecMethod,q,v,r,rList,q1,q2,qBegin,qEnd,gateSequence},
   e2n = Dimensions[krausList][[2]];
   {k,n,m} = Log2[Dimensions[krausList]];
   If[IntegerQ[k],,Throw[StringForm["The number of Kraus operators is not a power of two."]]];
-  If[IntegerQ[m],,Throw[StringForm["The number of rows of the Kraus representation is not a power of two."]]];
-  If[IntegerQ[n],,Throw[StringForm["The number of columns of the Kraus representation is not a power of two."]]];
+  If[IntegerQ[m],,Throw[StringForm["The number of rows in one Kraus operator is not a power of two."]]];
+  If[IntegerQ[n],,Throw[StringForm["The number of columns of one Kraus operator is not a power of two."]]];
   If[StringQ[OptionValue[DecomposeIso]],,Throw[StringForm["The name of decomposition method is not a string"]]];
 
   q = Flatten[krausList,1];
@@ -4539,13 +4539,13 @@ Output: {{st[r1]} , {st[r21],st[r22]} , {st[r31],st[r32],st[r33],st[r34]} , ...,
 *)
 Options[MeasuredQCM]={DecomposeIso->"QSD", DecomposeLastIso->"DecIsometry", DoNotReuseAncilla->False}
 MeasuredQCM[krausList_,OptionsPattern[]]:=
-Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,rList,temp},
+Module[{SplitResult, gateSequence, DecMethod, l, n, m, k, loopNum, i, v, vList, qList, rList},
   {k,n,m} = Log2[Dimensions[krausList]]; (* (n,m) size of each kraus operator *)
   If[IntegerQ[k],,Throw[StringForm["The number of Kraus operators is not a power of two."]]];
-  If[IntegerQ[m],,Throw[StringForm["The number of rows of the Kraus representation is not a power of two."]]];
-  If[IntegerQ[n],,Throw[StringForm["The number of columns of the Kraus representation is not a power of two."]]];
+  If[IntegerQ[m],,Throw[StringForm["The number of rows in one Kraus operator is not a power of two."]]];
+  If[IntegerQ[n],,Throw[StringForm["The number of columns in one Kraus operator is not a power of two."]]];
   If[StringQ[OptionValue[DecomposeIso]],,Throw[StringForm["The name of decomposition method is not a string"]]];
-  If[n+k<=m, Throw[StringForm["The list of kraus operators should full fill n+k>m"]]];
+  If[n+k<=m, Throw[StringForm["The list of kraus operators should fulfil n+k>m"]]];
 
   (* loopNum = number of iteration with qr decomposition *)
   If[m<n, loopNum = k; l=n-m,loopNum = n+k-m-1;l=1];
@@ -4560,11 +4560,9 @@ Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,r
         DecMethod = QSD;
         (* Matrix calculation *)
         SplitResult = Flatten[Map[ReducedCSDSplit[#,EfficientRepresentation->True]&, qList],1];
-        (* A list bellow contains all gate sequences multiplex controlled by the first i-1 bits*)
-        vList =SplitResult[[1;;-1;;3]];  (* Zero controlled gate v *)
-        rList = Flatten[SplitResult[[2;;-1;;3]],1];  (* Matrices with cos and sin elements *)
-        qList =  Flatten[SplitResult[[3;;-1;;3]],1]; (* Isometry for the decomposition in the next round*)
-
+        vList = SplitResult[[1;;-1;;3]];  (* Zero controlled gate v *)
+        rList = Flatten[SplitResult[[2;;-1;;3]],1]; (* Matrices with cos and sin elements *)
+        qList = Flatten[SplitResult[[3;;-1;;3]],1]; (* Isometry for the decomposition in the next round*)
         (* Append results *)
         Which[
           OptionValue[DoNotReuseAncilla]==False,
@@ -4577,9 +4575,6 @@ Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,r
                   Map[DecMethod[#,action={loopNum+1}]&,rList]
                 ],
                 Mmt2[i,loopNum+1]
-                (*CTRLST[{},{i},{},
-                  {{NOT[loopNum+1]}}
-                ]*)
               }
             ],
           OptionValue[DoNotReuseAncilla]==True,
@@ -4600,9 +4595,9 @@ Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,r
       OptionValue[DecomposeIso]!="CSD",
         DecMethod = ChooseDecMethod[OptionValue[DecomposeIso]];
         (* Matrix calculation *)
-        qrSplitResult = Flatten[Map[QRSplit, qList],1];
-        rList = qrSplitResult[[1;;-1;;2]];
-        qList =  Flatten[qrSplitResult[[2;;-1;;2]],1];
+        SplitResult = Flatten[Map[QRSplit, qList],1];
+        rList = SplitResult[[1;;-1;;2]];
+        qList =  Flatten[SplitResult[[2;;-1;;2]],1];
         (* Append results *)
         Which[
           OptionValue[DoNotReuseAncilla]==False,
@@ -4612,9 +4607,6 @@ Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,r
                   Map[DecMethod[#,action=Join[{loopNum+1},Range[loopNum+l+1,loopNum+l+m]]]&,rList]
                 ],
                 Mmt2[i,loopNum+1]
-                (*CTRLST[{},{i},{},
-                  {{NOT[loopNum+1]}}
-                ]*)
               }
             ],
           OptionValue[DoNotReuseAncilla]==True,
@@ -4626,9 +4618,9 @@ Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,r
               Mmt[i]
               }
             ]
-        ]  (* end whether reuse qubit *)
-      ]   (* end which decomposition *)
-  ];  (* end for the loop *)
+        ] (* end whether reuse qubit *)
+      ] (* end which decomposition *)
+  ]; (* end for the loop *)
 
   DecMethod=ChooseDecMethod[OptionValue[DecomposeLastIso]];
   AppendTo[gateSequence,
@@ -4643,11 +4635,11 @@ Module[{SplitResult, gateSequence, DecMethod,l,n,m,k,loopNum, i,v,vList, qList,r
 ]
 
 (*###########################################################################*)
-(* Functions for reconstruction of the kraus operators*)
+(* Functions for reconstruction the list of kraus operators*)
 
 (* Find the label of all qubits used *)
-FindUsedBits[st_]:= Module[{QubitsLabel,implementedGate},
-  implementedGate={diagType,czType,cnotType,xType,yType,zType,measType,ancillaType,postselType,measType2};
+FindUsedBits[st_]:= Module[{QubitsLabel, implementedGate},
+  implementedGate={diagType, czType, cnotType, xType, yType, zType, measType, ancillaType, postselType, measType2};
   If[
     Not[AllTrue[st, MemberQ[implementedGate, #[[1]]] &]],
     Throw[StringForm["Gate type not implemented in FindUsedBits"]],
@@ -4656,7 +4648,7 @@ FindUsedBits[st_]:= Module[{QubitsLabel,implementedGate},
     st=={},
     QubitsLabel={},
     QubitsLabel=Map[
-      If[MemberQ[{diagType,czType,cnotType,measType2}, #[[1]]], 
+      If[MemberQ[{diagType, czType, cnotType, measType2}, #[[1]]], 
         {#[[2]], #[[3]]},
         #[[3]]
       ]&,
@@ -4681,8 +4673,8 @@ RepalceQubitsInd[st_, asso_] := Module[{oldQubitsLabel, newQubitsLabel},
   ]
 ]
 
-(* Create a compact isometry with all not used qubits neglected. *)
-CreateCompactIsometryFromList[st_, targetQubits_] := Module[{asso, st2},
+(* Create a isometry with qubits relabeled to be the given target qubits *)
+CreateIsometryFromListRelabeled[st_, targetQubits_] := Module[{asso, st2},
   asso = AssociationThread[Sort[targetQubits] -> Range[Length[targetQubits]]];
   Return[CreateIsometryFromList[RepalceQubitsInd[st, asso]]];
 ]
@@ -4700,15 +4692,14 @@ ToSimpleGate[st_] := Module[{},
 ]
 
 (*
-Apply a controlled gate to a matrix.
+Apply a list of matrix that are multiplex controlled.
 Each gate matrix must be a m to n qubits isometry of the same size with m<n
 The order of the elements in controls must be consistent with the order of the gate matrices
 Input:
 ucg: {gates, controls, isoTargets, numQubits}, where gates is a list of isometry, controls and isoTargets are lists of qubits indices and numQubits is the total number of qubits.
 mat: a two dimensional matrix, can be a state or operator
 *)
-ApplyControlledGate[ucg_, mat_] := 
- Module[{gates, controls, isoTargets, numQubits, ids,m,targetMats,gateMats,newOrder,asso, mat2, matlist, mat3},
+ApplyMultiControlledGate[ucg_, mat_] := Module[{gates, controls, isoTargets, numQubits, ids, n, m, targetMats, gateMats, newOrder, asso, mat2, matlist, mat3},
   {gates, controls, isoTargets, numQubits} = ucg;
   {n,m} = Log2[Dimensions[gates[[1]]]];
   (*Validity check*)
@@ -4741,17 +4732,16 @@ ApplyControlledGate[ucg_, mat_] :=
 ]
 
 (* Apply a controlled gate sequence to a matrix *)
-
-CTRLSTM[controls_,stList_, numQubits_, mat_]:=Module[{zeroControls,oneControls,multiControls,gates,isoTargets,m,n,idmat,idiso,pos,toAdd,controlqubit},
+CTRLSTM[controls_,stList_, numQubits_, mat_]:=Module[{zeroControls, oneControls, multiControls, gates, isoTargets, m, n, idmat, idiso, pos, toAdd, controlqubit},
   {zeroControls,oneControls,multiControls}=controls;
   (* Pickout qubits that the controled gates act on and create the correponding small isometry. *)
   isoTargets = DeleteDuplicates @ Flatten[FindUsedBits /@ stList];
-  gates = CreateCompactIsometryFromList[#, isoTargets] & /@ stList;
+  gates = CreateIsometryFromListRelabeled[#, isoTargets] & /@ stList;
   (*insert identity isometry to convert zeroControls and oneControls to multiControls.*)
   {m,n} = Dimensions[gates[[1]]];
   idmat = IdentityMatrix[Min[m, n]];
   idiso = Flatten[ConstantArray[idmat, 2^Abs[Log2[m] - Log2[n]]], 1];
-  If[Length[zeroControls]>0,
+  If[Length[zeroControls] > 0,
     Do[
       multiControls = Sort@Append[multiControls, controlqubit];
       pos = FirstPosition[multiControls, controlqubit][[1]];
@@ -4762,7 +4752,7 @@ CTRLSTM[controls_,stList_, numQubits_, mat_]:=Module[{zeroControls,oneControls,m
       {controlqubit, zeroControls}
     ]
   ];
-  If[Length[oneControls]>0,
+  If[Length[oneControls] > 0,
     Do[
       multiControls = Sort@Append[multiControls, controlqubit];
       pos = FirstPosition[multiControls, controlqubit][[1]];
@@ -4773,11 +4763,10 @@ CTRLSTM[controls_,stList_, numQubits_, mat_]:=Module[{zeroControls,oneControls,m
       {controlqubit, oneControls}
     ]
   ];
-  ApplyControlledGate[{gates, multiControls, isoTargets, numQubits}, mat]
+  ApplyMultiControlledGate[{gates, multiControls, isoTargets, numQubits}, mat]
 ]
 
 (* Find the input ancilla qubits. It will dig into the sub sequence inside a control gate sequence and also take care of the MeasType2 gate *)
-
 FindAncilla[st_] := 
  Module[{result, gate, ancilla, ancilla1, ancilla2, mmt2List, anciPos},
   result = {}; 
