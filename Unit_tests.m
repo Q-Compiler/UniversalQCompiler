@@ -1750,9 +1750,213 @@ testInstrumentDecompositions := If[testDecInstrumentInQCM,Print["All tests for D
 Print["testInstrumentDecompositions neither returned True nor False"]]
 
 
+(* Unit test for MeasuredQCM *)
+
+testReducedCSDSplit :=
+ Module[{m, n, v, m1, m2, m3, rotList, u1, u2, c, s, , q, reducedDim},
+  (* 2m\[LessEqual]n and n must be even*)
+  result = True;
+  m = RandomInteger[{2, 10}];
+  n = RandomInteger[{2*m, 30}]*2;
+  v = RPickRandomIsometry[m, n];
+  
+  (* test without EfficientRepresentation *)
+  {m3, m2, m1} = ReducedCSDSplit[v];
+  If[
+   isZeroMatrix[v - m1.m2.m3],
+   result = False
+   ];
+  
+  (* test with EfficientRepresentation *)
+  {q, rotList, {u1, u2}} = 
+   ReducedCSDSplit[v, EfficientRepresentation -> True];
+  c = DiagonalMatrix[Map[#[[1, 1]] &, rotList]];
+  s = DiagonalMatrix[Map[#[[1, 2]] &, rotList]];
+  reducedDim = Dimensions[s][[1]];
+  m3 = ArrayFlatten[{{q}, {SparseArray[{}, {reducedDim, 
+        reducedDim}]}}];
+  m2 = ArrayFlatten[{{c, s}, {s, c}}];
+  m1 = ArrayFlatten[{{u1, 0}, {0, u2}}];
+  If[
+   isZeroMatrix[v - m1.m2.m3],
+   ,
+   result = False
+   ];
+  
+  (* return result *)
+  If[
+   result,
+   Return[True],
+   Print["Error in ReducedCSDSplit function"]; Return[False]
+   ]
+  ]
+
+testQRSplit :=
+ Module[{result, m, n, v, r, q1, q2},
+  result = True;
+  m = RandomInteger[{2, 10}];
+  n = RandomInteger[{2*m, 30}]*2;
+  v = RPickRandomIsometry[m, n];
+  {r, {q1, q2}} = QRSplit[v];
+  
+  If[
+   isZeroMatrix[v - ArrayFlatten[{{q1, 0}, {0, q2}}].r],
+   ,
+   result = False
+   ];
+  
+  If[
+   result,
+   Return[True],
+   Print["Error in QRSplit function"]; Return [False]
+   ]
+  ]
+
+testFindAncilla := Module[{st, check},
+    st = {{5, 0, 
+    1}, {100, {{}, {}, {}}, {{{5, 0, 3}}, {{5, 0, 
+       3}}}}, {100, {{}, {}, {}}, {{{5, 0, 4}}, {{5, 0, 4}}}}, {7, 2, 
+    3}, {7, 3, 5}};
+    check = (FindAncilla[st]=={{5, 0, 1}, {5, 0, 2}, {5, 0, 4}});
+    If[Not[check], Print["Error in FindAncilla[]"]];
+    Return[check]
+]
+
+CheckMeasuredQCM[m_,n_,k_,decMeth_,useAncilla_] := Module[{check, krausList, gatelist, output, mat1, mat2, chanout},
+  check = True;
+  krausList = RPickRandomChannel[2^m, 2^n, 2^k];
+  gatelist = MeasuredQCM[krausList, DecomposeIso->decMeth, DoNotReuseAncilla->Not[useAncilla]];
+  output = CreateOperationFromGateList[gatelist];
+  If[Length[Dimensions[output]]==2,
+    chanout = {output},
+    chanout = output[[;;,1]]
+  ];
+  For[i=1,i<=2^k,i++,
+    mat1 = chanout[[i]];
+    mat2 = krausList[[i]];
+    mat1 = mat1/mat1[[1,1]] * mat2[[1,1]];
+    If[isZeroMatrix[Chop[mat1-mat2]], ,check=False]
+  ];
+  Return[check];
+]
+
+testMeasuredQCM := Module[{error = 0},
+  If[
+  Quiet[Check[CheckMeasuredQCM[1, 1, 3, "DecIsometry", True],error=1;False]]&&
+  Quiet[Check[CheckMeasuredQCM[3, 1, 3, "DecIsometry", True],error=2;False]]&&
+  Quiet[Check[CheckMeasuredQCM[2, 2, 1, "DecIsometry", True],error=3;False]]&&
+  Quiet[Check[CheckMeasuredQCM[1, 3, 1, "DecIsometry", True],error=4;False]]&&
+  Quiet[Check[CheckMeasuredQCM[2, 1, 3, "DecIsometry", True],error=5;False]]&&
+  Quiet[Check[CheckMeasuredQCM[1, 2, 0, "DecIsometry", True],error=6;False]]&&
+  Quiet[Check[CheckMeasuredQCM[1, 1, 3, "QSD", True],error=7;False]]&&
+  Quiet[Check[CheckMeasuredQCM[3, 1, 3, "QSD", True],error=8;False]]&&
+  Quiet[Check[CheckMeasuredQCM[2, 2, 1, "QSD", True],error=9;False]]&&
+  Quiet[Check[CheckMeasuredQCM[1, 3, 1, "QSD", True],error=10;False]]&&
+  Quiet[Check[CheckMeasuredQCM[2, 1, 3, "QSD", True],error=11;False]]&&
+  Quiet[Check[CheckMeasuredQCM[1, 2, 0, "QSD", True],error=12;False]]&&
+  Quiet[Check[CheckMeasuredQCM[1, 1, 3, "DecIsometry", False],error=13;False]]&&
+  Quiet[Check[CheckMeasuredQCM[3, 1, 3, "DecIsometry", False],error=14;False]]&&
+  Quiet[Check[CheckMeasuredQCM[2, 2, 1, "DecIsometry", False],error=15;False]]&&
+  Quiet[Check[CheckMeasuredQCM[1, 3, 1, "DecIsometry", False],error=16;False]]&&
+  Quiet[Check[CheckMeasuredQCM[2, 1, 3, "DecIsometry", False],error=17;False]]&&
+  Quiet[Check[CheckMeasuredQCM[1, 2, 0, "DecIsometry", False],error=18;False]]&&
+  Quiet[Check[CheckMeasuredQCM[1, 1, 3, "QSD", False],error=19;False]]&&
+  Quiet[Check[CheckMeasuredQCM[3, 1, 3, "QSD", False],error=20;False]]&&
+  Quiet[Check[CheckMeasuredQCM[2, 2, 1, "QSD", False],error=21;False]]&&
+  Quiet[Check[CheckMeasuredQCM[1, 3, 1, "QSD", False],error=22;False]]&&
+  Quiet[Check[CheckMeasuredQCM[2, 1, 3, "QSD", False],error=23;False]]&&
+  Quiet[Check[CheckMeasuredQCM[1, 2, 0, "QSD", False],error=24;False]]
+  ,
+  True,
+  Print["Error in TestMeasuredQCM[] with error message code ",error];False
+  ]
+]
+
+CheckDecChannelRecursively[m_, n_, k_, decMeth_] := Module[{krausList, loopNum, output, chanout, mat, mat1, mat2, mat3List, gateList},
+  krausList = RPickRandomChannel[2^m,2^n,2^k];
+  {gateList, mat1, mat2} = DecChannelRecursively[krausList, DecomposeIso -> decMeth];
+  
+  (* Case 1, this is the last step of the decomposition *)
+  If[mat1=={},
+    output = CreateOperationFromGateList[gateList];
+    If[Length[Dimensions[output]]==2,
+      chanout = {output},
+      chanout = Flatten[output,1]
+    ];
+    If[Dimensions[chanout]=={2^k,2^n,2^m},
+      ,
+      Print["The output does not have the correct dimension."];
+      Return[False]
+    ];
+    For[i=1, i<=Length[krausList], i++,
+      mat1 = chanout[[i]];
+      mat = krausList[[i]];
+      mat1 = mat1/mat1[[1,1]] * mat[[1,1]];
+      If[isZeroMatrix[Chop[mat1-mat]], ,Return[False]]
+    ];
+    Return[True]
+  ];
+
+  (* Case 2, this is a middle step *)
+  output = CreateOperationFromGateList[gateList];
+  mat3List = Partition[output, 2^m];
+
+  mat1 = Flatten[mat1,1].mat3List[[1]];
+  mat = Flatten[krausList[[1;;2^k/2]],1];
+  mat1 = mat1/mat1[[1,1]] * mat[[1,1]];
+  If[isZeroMatrix[Chop[mat1-mat]], ,Return[False]];
+
+  mat2 = Flatten[mat2,1].mat3List[[2]];
+  mat = Flatten[krausList[[2^k/2+1;;]],1];
+  mat2 = mat2/mat2[[1,1]] * mat[[1,1]];
+  If[isZeroMatrix[Chop[mat2-mat]], ,Return[False]];
+
+  Return[True]
+]
+
+testDecChannelRecursively := Module[{error = 0},
+  If[
+  (*Last step*)
+  Quiet[Check[CheckDecChannelRecursively[1, 2, 0, "DecIsometry"],error=1;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[2, 2, 1, "DecIsometry"],error=2;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[2, 2, 0, "DecIsometry"],error=4;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[3, 1, 2, "DecIsometry"],error=5;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[2, 4, 0, "DecIsometry"],error=6;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[1, 2, 0, "QSD"],error=7;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[2, 2, 1, "QSD"],error=8;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[2, 2, 0, "QSD"],error=9;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[3, 1, 2, "QSD"],error=10;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[2, 4, 0, "QSD"],error=11;False]]&&
+  (*Middle step*)
+  Quiet[Check[CheckDecChannelRecursively[1, 1, 2, "DecIsometry"],error=12;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[2, 1, 2, "DecIsometry"],error=13;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[2, 3, 2, "DecIsometry"],error=14;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[2, 2, 3, "DecIsometry"],error=15;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[1, 1, 2, "QSD"],error=16;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[2, 1, 2, "QSD"],error=17;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[2, 3, 2, "QSD"],error=18;False]]&&
+  Quiet[Check[CheckDecChannelRecursively[2, 2, 3, "QSD"],error=19;False]]
+  ,
+  True,
+  Print["Error in DecChannelRecursively[] with error message code ",error];False
+  ]
+]
+
+testMeasuredQCMAll := Module[{},
+  If[testReducedCSDSplit&&
+    testQRSplit&&
+    testFindAncilla&&
+    testMeasuredQCM&&
+    testDecChannelRecursively,
+    Print["All tests for MeasuredQCM pass."],
+    ,
+    Print["testMeasuredQCMAll neither returned True nor False"]
+  ]
+]
+
 
 (*Run all tests*)
-runAllTests:=Module[{},(testAllBasicMethods;testUCGs;testAllDiagGateMethods;testIsoSmall;testCCDec;testDec2Qubit;testDecSingleQubit;testQSDAll;testQSD;testStatePreparationAll;testAllMCGMethods;testKnill;testIsometryDecompositions;testStinespring;testPOVM;testXXCNOTAll;testChannelDecompositions;testInstrumentDecompositions)]
+runAllTests:=Module[{},(testAllBasicMethods;testUCGs;testAllDiagGateMethods;testIsoSmall;testCCDec;testDec2Qubit;testDecSingleQubit;testQSDAll;testQSD;testStatePreparationAll;testAllMCGMethods;testKnill;testIsometryDecompositions;testStinespring;testPOVM;testXXCNOTAll;testChannelDecompositions;testInstrumentDecompositions;testMeasuredQCMAll)]
 
 
 Timing[runAllTests]
