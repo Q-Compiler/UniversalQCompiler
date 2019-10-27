@@ -182,7 +182,7 @@ NearbyIsometry::usage="NearbyIsometry[iso] uses the singular value decomposition
 QRSplit::usage="QRSplitv] splits an isometry into two half-size ones and a multiplex controlled gate using QR decomposition."
 ReducedCSDSplit::usage="ReducedCSDSplit[q] splits an isometry into two half-size ones and multiplex controlled gates using Reduced Consin-Sine decomposition."
 DecChannelRecursively::usage="DecChannelRecursively[krausList] recursively decomposes a list of 2^k Kraus operators into elementry gates and measurement operators."
-MeasuredQCM::usage="MeasuredQCM[krausList] decomposes a list of 2^k Kraus operators into elementry gates and measurement operators."
+DecChannelInMeasuredQCM::usage="DecChannelInMeasuredQCM[krausList] decomposes a list of 2^k Kraus operators into elementry gates and measurement operators."
 CTRLSTM::usage="CTRLSTM[controls, stList, numQubits, mat] applies a controlled gate sequence to a matrix."
 RepalceQubitsInd::usage="RepalceQubitsInd[st, asso] replaces the label of qubits according to the association."
 ApplyMultiControlledGate::usage="ApplyMultiControlledGate[ucg, mat] applies a list of controlled isometries to a matrix."
@@ -4363,13 +4363,14 @@ NearbyIsometry[iso_] := Module[{i,u,v,w},
 
 measType2 = 7;
 controlledStType = 100;
+BitType = 9;
 
 
 (* New gate functions *)
 
 Mmt2[j_,i_] := {measType2,j,i};
 CTRLST[z_,o_,u_,stList_] := Module[{}, Return[{controlledStType, {z,o,u}, stList}]]
-
+Bit[p,i] := {BitType, p, i};
 
 (* Functions for MeasuredQCM *)
 
@@ -4505,7 +4506,7 @@ Module[{k,n,e2n,m,DecMethod,q,v,r,rList,q1,q2,qBegin,qEnd,gateSequence},
     gateSequence = Table[Ancilla[0,i], {i,1,If[m<n,n-m,1]}];
     gateSequence = Join[gateSequence, 
       {
-        CTRLST[{1},{},{},
+        CTRLST[{},{},{},
           {DecMethod[v,action=Range[qBegin,qEnd]]}
         ],
         CTRLST[{},{},Range[qBegin,qEnd],
@@ -4537,8 +4538,8 @@ Input: a list of kraus operators {K1,K2,...K_(2^k)};
 Output: {{st[r1]} , {st[r21],st[r22]} , {st[r31],st[r32],st[r33],st[r34]} , ..., {st[q1}, st[q2], ..., st[q_(2^k)]}}, where st[mat] is the gate sequence of matrix mat.
 
 *)
-Options[MeasuredQCM]={DecomposeIso->"QSD", DecomposeLastIso->"DecIsometry", DoNotReuseAncilla->False}
-MeasuredQCM[krausList_,OptionsPattern[]]:=
+Options[DecChannelInMeasuredQCM]={DecomposeIso->"QSD", DecomposeLastIso->"DecIsometry", DoNotReuseAncilla->False}
+DecChannelInMeasuredQCM[krausList_,OptionsPattern[]]:=
 Module[{SplitResult, gateSequence, DecMethod, l, n, m, k, loopNum, i, v, vList, qList, rList},
   {k,n,m} = Log2[Dimensions[krausList]]; (* (n,m) size of each kraus operator *)
   If[IntegerQ[k],,Throw[StringForm["The number of Kraus operators is not a power of two."]]];
@@ -4568,7 +4569,7 @@ Module[{SplitResult, gateSequence, DecMethod, l, n, m, k, loopNum, i, v, vList, 
           OptionValue[DoNotReuseAncilla]==False,
             gateSequence=Join[gateSequence,
               {
-                CTRLST[{loopNum+1},{},Range[1,i-1],
+                CTRLST[{},{},Range[1,i-1],
                   Map[DecMethod[#,action=Range[loopNum+l+1,loopNum+l+m]]&,vList]
                 ],
                 CTRLST[{},{},Join[Range[1,i-1],Range[loopNum+l+1,loopNum+l+m]],
@@ -4580,7 +4581,7 @@ Module[{SplitResult, gateSequence, DecMethod, l, n, m, k, loopNum, i, v, vList, 
           OptionValue[DoNotReuseAncilla]==True,
             gateSequence=Join[gateSequence,
               {
-                CTRLST[{i},{},Range[1,i-1],
+                CTRLST[{},{},Range[1,i-1],
                   Map[DecMethod[#,action=Range[loopNum+l+1,loopNum+l+m]]&,vList]
                 ],
                 CTRLST[{},{},Join[Range[1,i-1],Range[loopNum+l+1,loopNum+l+m]],
