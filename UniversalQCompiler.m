@@ -366,14 +366,15 @@ SimplifyGateList[NGateList[st]]
 (*Create an n qubit isometry from list form. Multiplies the unitaries described in the list (in reversed order!)  and outputs the first m columns*)
 (* Use FullSimp\[Rule]False to avoid attempts to use FullSimplify *)
 Options[CreateIsometryFromList]={FullSimp->True};
-CreateIsometryFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{mat,mat2,i,k,ancillain,ancillainnums,ancillainvals,ancillaout,ancillaoutnums,ancillaoutvals,st2,id,rest,n1=n},
-  IsListForm[st];
-  If[n===Null,n1=NumberOfQubits[st]];ancillain=SortBy[FindAncilla[st],Last];
+CreateIsometryFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{st3,mat,mat2,i,k,ancillain,ancillainnums,ancillainvals,ancillaout,ancillaoutnums,ancillaoutvals,st2,id,rest,n1=n},
+  st3 = st/.{{BitType,1,x_}->Ancilla[0,x], {BitType,0,x_}->Ancilla[1,x]};
+  IsListForm[st3];
+  If[n===Null,n1=NumberOfQubits[st3]];ancillain=SortBy[FindAncilla[st3],Last];
   (* Deal with Mmt2 {measType2,j,i}, if i is in ancillain, we add j *)
   If[ancillain==={},ancillainnums={},ancillainnums=Transpose[ancillain][[3]];ancillainvals=Transpose[ancillain][[2]]];
-  ancillaout=SortBy[Cases[st,{postselType,_,_}],Last];
+  ancillaout=SortBy[Cases[st3,{postselType,_,_}],Last];
   If[ancillaout==={},ancillaoutnums={},ancillaoutnums=Transpose[ancillaout][[3]];ancillaoutvals=Transpose[ancillaout][[2]]];
-  st2=DeleteCases[st,{x_/;x==ancillaType||x==postselType,_,_}];mat={{1}};k=0;
+  st2=DeleteCases[st3,{x_/;x==ancillaType||x==postselType,_,_}];mat={{1}};k=0;
   For[i=1,i<=n1,i++,
     mat=KroneckerProduct[mat,
       If[MemberQ[ancillainnums,i],
@@ -4080,7 +4081,7 @@ IsQubitIsometry[v_,methodName_:"UNKNOWN"]:=Module[{numRow,numCol},
   ]
   
 IsListFormHelp[gate_,methodName_]:=Module[{},
-  If[MemberQ[{diagType,czType,cnotType,xType,yType,zType,measType,ancillaType,postselType,xxType,rType,measType2,controlledStType},gate[[1]]],,Throw[StringJoin["The gate ",ToString[gate]," appearing as an input in method ",methodName ," is of unknown type."]]];
+  If[MemberQ[{diagType,czType,cnotType,xType,yType,zType,measType,ancillaType,postselType,xxType,rType,measType2,controlledStType, BitType},gate[[1]]],,Throw[StringJoin["The gate ",ToString[gate]," appearing as an input in method ",methodName ," is of unknown type."]]];
   Which[
     MemberQ[{diagType},gate[[1]]],
     If[gate[[2]]=={}&&gate[[3]]=={},Goto[LabelEnd];];
@@ -4093,7 +4094,9 @@ IsListFormHelp[gate_,methodName_]:=Module[{},
     MemberQ[{xxType},gate[[1]]],If[Length[gate[[3]]]==2&&IntegerQ[gate[[3]][[1]]]&&IntegerQ[gate[[3]][[2]]]&&NumericQ[gate[[2]]],,Throw[StringJoin["There is an XX gate ",ToString[gate]," appering as an input in method ",methodName ," that has incorrect parameters."]]],
     MemberQ[{rType},gate[[1]]],If[Length[gate[[2]]]==2&&NumericQ[gate[[2]][[1]]]&&NumericQ[gate[[2]][[2]]]&&IntegerQ[gate[[3]]],,Throw[StringJoin["There is an R gate ",ToString[gate]," appering as an input in method ",methodName ," that has incorrect parameters."]]],
     MemberQ[{controlledStType},gate[[1]]],
-    Map[IsListFormHelp[#]&,gate[[3]]]
+    Map[IsListFormHelp[#]&,gate[[3]]],
+    MemberQ[{BitType},gate[[1]]],
+    If[gate[[2]]>=0 && gate[[2]]<=1,,Throw[StringJoin["The probability p in Bit gate does not belong to [0,1]."]]]
   ];
   Label[LabelEnd];
 ];
@@ -4370,7 +4373,7 @@ BitType = 9;
 
 Mmt2[j_,i_] := {measType2,j,i};
 CTRLST[z_,o_,u_,stList_] := Module[{}, Return[{controlledStType, {z,o,u}, stList}]]
-Bit[p,i] := {BitType, p, i};
+Bit[p_,i_] := {BitType, p, i};
 
 (* Functions for MeasuredQCM *)
 
@@ -4552,7 +4555,7 @@ Module[{SplitResult, gateSequence, DecMethod, l, n, m, k, loopNum, i, v, vList, 
   If[m<n, loopNum = k; l=n-m,loopNum = n+k-m-1;l=1];
   v =  Flatten[krausList,1];
   qList = {v};
-  gateSequence = Table[{5,0,i},{i,loopNum}];
+  gateSequence = Table[Bit[1,i],{i,loopNum}];
 
   For[i=1,i<=loopNum,i++,
     Which[

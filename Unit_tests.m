@@ -1825,7 +1825,7 @@ testFindAncilla := Module[{st, check},
 CheckMeasuredQCM[m_,n_,k_,decMeth_,useAncilla_] := Module[{check, krausList, gatelist, output, mat1, mat2, chanout},
   check = True;
   krausList = RPickRandomChannel[2^m, 2^n, 2^k];
-  gatelist = MeasuredQCM[krausList, DecomposeIso->decMeth, DoNotReuseAncilla->Not[useAncilla]];
+  gatelist = DecChannelInMeasuredQCM[krausList, DecomposeIso->decMeth, DoNotReuseAncilla->Not[useAncilla]];
   output = CreateOperationFromGateList[gatelist];
   If[Length[Dimensions[output]]==2,
     chanout = {output},
