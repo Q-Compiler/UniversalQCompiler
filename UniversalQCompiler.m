@@ -908,58 +908,51 @@ out
 ]
 
 Options[drawGraphFromGridForm]={DrawRotationAngles->False,Digits->2};
-drawGraphFromGridForm[gridForm1_,OptionsPattern[]]:= Module[{post,init,out,postSelSet,initSet,newTraceOuts,traceOutWires,positions,gridForm,edgeRenderingFunction,actQubits,text, posTemp,longestWireLength,vertexCoordRules,edges,wire, gateIndex,sortTarget,box,vertexRenderingFunction,vertexName},
-longestWireLength = Max[Map[Length, gridForm1[[1]]]];
-(*Move tracing out operations to the end (Remark: Removing this leads to a "cutting" of the white lines drawn after the tracing out operations
-with the control line of C-NOT gates. ToDo: Do not move tracing out to the end and fix the mentioned "bug".*)
-initSet=gridForm1[[2]];
-postSelSet=gridForm1[[3]];
-positions=Position[gridForm1[[1]],{measType,0,_}];
-gridForm=ReplacePart[gridForm1[[1]],positions->"mustBeLeftBlank"];
-Do[
-gridForm[[pos[[1]],longestWireLength-1]]=gridForm1[[1]][[Delete[pos,0]]]
-,{pos,positions}];
-(*Create vertexCoordRules*)
-vertexCoordRules = {};
-vertexName[wire_, gateIndex_]:= ((wire -1)*longestWireLength+gateIndex-1);
-For[wire =1, wire <= Length[gridForm], wire ++,
-For[gateIndex = 1, gateIndex <= Length[gridForm[[wire]]], gateIndex++,
-AppendTo[vertexCoordRules, vertexName[wire,gateIndex]-> {gateIndex,-wire}];
-];
-];
+drawGraphFromGridForm[gridForm_,OptionsPattern[]]:= Module[{post,init,out,postSelSet,initSet,newTraceOuts,traceOutWires,positions,edgeRenderingFunction,actQubits,text, posTemp,numWires,longestWireLength,vertexCoordRules,edges,wire, gateIndex,sortTarget,box,vertexRenderingFunction,
+vertexName,vertexCoordinates,vertices,vetexShapeFunction,edgeShapeFunction},
+longestWireLength = Max[Map[Length, gridForm[[1]]]];
+numWires = Length[gridForm[[1]]];
+initSet=gridForm[[2]];
+postSelSet=gridForm[[3]];
+
+(*Create vertexCoordinates. As of mathematica 12 this information takes the form of a list rather than a function.
+So we also explicitly create a list of vertices as well as one of their coordinates to ensure the two lists are ordered the same.*)
+vertices = Flatten[Table[{w,g}, {w,1,numWires}, {g,1,longestWireLength}],1];
+vertexCoordinates = Map[Function[{#[[2]],-#[[1]]}], vertices]; (*we get the y coordinate from the wire the gate is on lowest wire at the top*)
+
 edges = {};
+For[wire =1, wire <= Length[gridForm[[1]]], wire++,
 (*edges between adjacent gates on the same wire*)
-For[wire =1, wire <= Length[gridForm], wire++,
-For[gateIndex = 1, gateIndex < Length[gridForm[[wire]]], gateIndex++,
-AppendTo[edges, vertexName[wire, gateIndex]-> vertexName[wire, gateIndex+1]];
+For[gateIndex = 1, gateIndex < Length[gridForm[[1]][[wire]]], gateIndex++,
+AppendTo[edges, {wire, gateIndex}-> {wire, gateIndex+1}];
 ];
 (*edges for controls*)
-For[gateIndex = 1, gateIndex <= Length[gridForm[[wire]]], gateIndex++,
-If[Head[gridForm[[wire, gateIndex]]]=== List && 
-(gridForm[[wire, gateIndex]][[1]]==cnotType||gridForm[[wire, gateIndex]][[1]]==czType)&&
-gridForm[[wire, gateIndex]][[3]]==wire,
-AppendTo[edges, vertexName[wire, gateIndex]->  vertexName[gridForm[[wire, gateIndex]][[2]],gateIndex]];
+For[gateIndex = 1, gateIndex <= Length[gridForm[[1]][[wire]]], gateIndex++,
+If[Head[gridForm[[1]][[wire, gateIndex]]]=== List && 
+(gridForm[[1]][[wire, gateIndex]][[1]]==cnotType||gridForm[[1]][[wire, gateIndex]][[1]]==czType)&&
+gridForm[[1]][[wire, gateIndex]][[3]]==wire,
+AppendTo[edges, {wire, gateIndex}-> {gridForm[[1]][[wire, gateIndex]][[2]],gateIndex}];
 ];
 ];
 ];
-vertexRenderingFunction[pos_, name_] := Module[{wireIndex, positionAlongWire,type, controlOrParameter,gate,target}, 
-{wireIndex,positionAlongWire} = QuotientRemainder[name, longestWireLength] + {1,1};
-gate = gridForm[[wireIndex, positionAlongWire]];
+
+vetexShapeFunction[{x_,y_},v_,{w_,h_}] := Module[{vsWireIndex=v[[1]], vsGateIndex=v[[2]],pos={x,y}, gate,type, controlOrParameter,target},
+gate = gridForm[[1]][[vsWireIndex, vsGateIndex]];
 (*If a qubits starts in a fixed state, draw \ket{0}*)
-init={};
-If[positionAlongWire==1&&MemberQ[initSet,{_,_,wireIndex}],
-If[MemberQ[initSet,{_,0,wireIndex}],
-init={Black, Text["|0>", pos-{0.2,0}]},
-init={Black, Text["|1>", pos-{0.2,0}]}
-]
+init=If[vsGateIndex==1&&MemberQ[initSet,{_,_,vsWireIndex}],
+If[MemberQ[initSet,{_,0,vsWireIndex}],
+{Black, Text["|0>", pos-{0.2,0}]},
+{Black, Text["|1>", pos-{0.2,0}]}
+],
+{}
 ];
 (*If a qubits are postSelSetected in a fixed state, draw \bra{0}*)
-post={};
-If[positionAlongWire==longestWireLength&&MemberQ[postSelSet,{_,_,wireIndex}],
-If[MemberQ[postSelSet,{_,0,wireIndex}],
-post={Black, Text["<0|", pos+{0.2,0}]},
-post={Black, Text["<1|", pos+{0.2,0}]}
-]
+post= If[vsGateIndex==longestWireLength&&MemberQ[postSelSet,{_,_,vsWireIndex}],
+If[MemberQ[postSelSet,{_,0,vsWireIndex}],
+{Black, Text["<0|", pos+{0.2,0}]},
+{Black, Text["<1|", pos+{0.2,0}]}
+],
+{}
 ];
 out=Which[TrueQ[gate == "mustBeLeftBlank"],{},TrueQ[gate == "blankWhichCanBeOverwritten"],{},
 {type, controlOrParameter,target} = gate;TrueQ[(type==cnotType ||type==czType)&& controlOrParameter==-pos[[2]]],
@@ -1001,7 +994,7 @@ If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["\[CapitalDelta](
 If[OptionValue[DrawRotationAngles],ToStringStandard[StringForm["XX(`1`)",DrawCircuitNumberFormat[controlOrParameter,OptionValue[Digits]]]],"XX"]],
 pos+{0,-(sortTarget[[-1]]-sortTarget[[1]])/2.}]}
 ];
-(*Do print the wire for the qubits where the diagonal gate is anot cting on*)
+(*Do print the wire for the qubits where the diagonal gate is not acting on*)
 actQubits={};
 Do[
 posTemp=pos;posTemp[[2]]=-act;
@@ -1018,22 +1011,30 @@ True,
 Join[init,out,post]
 ];
 
-edgeRenderingFunction[pos_,name_,a_] :=Module[{wireIndex,positionAlongWire,positionMst,out},
-{wireIndex,positionAlongWire} = QuotientRemainder[name[[1]], longestWireLength] + {1,1};
-(*Find position of last measurement gate*)
-positionMst=Position[gridForm[[wireIndex,1;;positionAlongWire]],_?(If[Length[#]==0,False,MemberQ[{measType},#[[1]]]]&),{1},Heads->False];
+
+edgeShapeFunction[pos_,edge_] :=Module[{v1=edge[[1]],v2=edge[[2]],wireIndex,positionAlongWire,positionMst,esOut},
+{wireIndex,positionAlongWire} = v1;
+positionMst=Position[gridForm[[1]][[wireIndex,1;;positionAlongWire]],_?(If[Length[#]==0,False,MemberQ[{measType},#[[1]]]]&),{1},Heads->False];
 If[Length[positionMst]==0,
-out={Directive[Thick, Black], Line[pos]},(*No measurement on the wire before the current position*)
+esOut={Directive[Thick, Black], Line[pos]},(*No measurement on the wire before the current position*)
 positionMst=positionMst[[1]][[1]];
-If[gridForm[[wireIndex,positionMst]][[2]]==0,
-out={Directive[Thick, White], Line[pos]},(*qubit was traced out earlier*)
-out={ Black, Line[pos+{{0,0.05},{0,0.05}}],Line[pos-{{0,0.05},{0,0.05}}]}(*qubit was measured out earlier*)
+If[gridForm[[1]][[wireIndex,positionMst]][[2]]==0,
+esOut={},(*qubit was traced out earlier*)
+esOut={ Black, Line[pos+{{0,0.05},{0,0.05}}],Line[pos-{{0,0.05},{0,0.05}}]}(*qubit was measured out earlier*)
 ];
 ];
-out
+esOut
 ];
 
-Return[GraphPlot[edges,VertexCoordinateRules->vertexCoordRules ,VertexRenderingFunction->vertexRenderingFunction, EdgeRenderingFunction->edgeRenderingFunction]];
+If[$VersionNumber >= 12,
+Return[GraphPlot[Graph[vertices, edges],VertexCoordinates->vertexCoordinates ,VertexShapeFunction->vetexShapeFunction, EdgeShapeFunction-> edgeShapeFunction]];
+,
+(*Pre mathematica 12 EdgeRenderingFunction and VertexRenderingFunction are passed the indices of the vertices, rather than their actual names in the second argument*)
+Return[GraphPlot[Graph[vertices, edges],VertexCoordinateRules->vertexCoordinates,
+VertexRenderingFunction->Function[{pos, edge}, vetexShapeFunction[pos,vertices[[edge]],{1,1}]], 
+EdgeRenderingFunction-> Function[{pos,edge,a}, edgeShapeFunction[pos,vertices[[edge]]]]]]; 
+]
+
 ];
 
 Options[qCircuitFromGridForm]={DrawRotationAngles->False,Digits->2};
