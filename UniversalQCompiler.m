@@ -26,7 +26,6 @@ BeginPackage["UniversalQCompiler`",{"QI`"}];
 7. [Raban] Extend Stateprepration scheme for small Schmidt rank
 8. [Raban] Remove "\textnormal" for Latex outputs
 9. In SimplifyGateList, reduce combinations of three rotation gates at the start of a circuit on ancilla qubits to two.
-10. Update PrintCircuit[] to also work with Mathematica 11.
 *)
 
 (*Methods to handle and simplify gate sequence*)
