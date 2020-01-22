@@ -185,7 +185,7 @@ DecChannelRecursively::usage="DecChannelRecursively[krausList] recursively decom
 DecChannelInMeasuredQCM::usage="DecChannelInMeasuredQCM[krausList] decomposes a list of 2^k Kraus operators into elementry gates and measurement operators."
 CTRLSTM::usage="CTRLSTM[controls, stList, numQubits, mat] applies a controlled gate sequence to a matrix."
 RepalceQubitsInd::usage="RepalceQubitsInd[st, asso] replaces the label of qubits according to the association."
-ApplyMultiControlledGate::usage="ApplyMultiControlledGate[ucg, mat] applies a list of controlled isometries to a matrix."
+ApplyMultiplexControlledGate::usage="ApplyMultiplexControlledGate[ucg, mat] applies a multiplex controlled gate."
 FindAncilla::usage="FindAncilla[st] finds the input ancilla qubits. It will dig into the sub sequence inside a control gate sequence and also take care of the MeasType2 gate."
 
 Begin["`Private`"];
@@ -324,7 +324,11 @@ Print["{",ancillaType,",1,n}: qubit n starts in state |1>"];
 Print["{",postselType,",0,n}: qubit n is postselected on |0>"];
 Print["{",postselType,",1,n}: qubit n is postselected on |1>"];
 Print["{",xxType,",t,{n,m}}: XX-gate with angle t on qubits n,m"];
-Print["{",rType,",{t,p},n}: R-gate with angles t,p on qubit n"]]
+Print["{",rType,",{t,p},n}: R-gate with angles t,p on qubit n"];
+Print["{",measType2,",j,i}: measure qubit i and store the result in bit j"];
+Print["{",bitType,",p, i}: intialize classical bit i in state 0 with probability p"];
+Print["{",controlledStTyp",z,o,u,stList}: A sequence of gate list stList that are multiplex controlled by qubits u and controlled by qubits z/o on zero or one."]
+]
 
 (*Transforms a list in list format to a list containing the corresponding matrices*)
 ListFormToOp[list_,n_:Null]:=Module[{numQubits=n},
@@ -367,7 +371,7 @@ SimplifyGateList[NGateList[st]]
 (* Use FullSimp\[Rule]False to avoid attempts to use FullSimplify *)
 Options[CreateIsometryFromList]={FullSimp->True};
 CreateIsometryFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{st3,mat,mat2,i,k,ancillain,ancillainnums,ancillainvals,ancillaout,ancillaoutnums,ancillaoutvals,st2,id,rest,n1=n},
-  st3 = st/.{{BitType,1,x_}->Ancilla[0,x], {BitType,0,x_}->Ancilla[1,x]};
+  st3 = st/.{{bitType,1,x_}->Ancilla[0,x], {bitType,0,x_}->Ancilla[1,x]};
   IsListForm[st3];
   If[n===Null,n1=NumberOfQubits[st3]];ancillain=SortBy[FindAncilla[st3],Last];
   (* Deal with Mmt2 {measType2,j,i}, if i is in ancillain, we add j *)
@@ -4081,7 +4085,7 @@ IsQubitIsometry[v_,methodName_:"UNKNOWN"]:=Module[{numRow,numCol},
   ]
   
 IsListFormHelp[gate_,methodName_]:=Module[{},
-  If[MemberQ[{diagType,czType,cnotType,xType,yType,zType,measType,ancillaType,postselType,xxType,rType,measType2,controlledStType, BitType},gate[[1]]],,Throw[StringJoin["The gate ",ToString[gate]," appearing as an input in method ",methodName ," is of unknown type."]]];
+  If[MemberQ[{diagType,czType,cnotType,xType,yType,zType,measType,ancillaType,postselType,xxType,rType,measType2,controlledStType, bitType},gate[[1]]],,Throw[StringJoin["The gate ",ToString[gate]," appearing as an input in method ",methodName ," is of unknown type."]]];
   Which[
     MemberQ[{diagType},gate[[1]]],
     If[gate[[2]]=={}&&gate[[3]]=={},Goto[LabelEnd];];
@@ -4095,7 +4099,7 @@ IsListFormHelp[gate_,methodName_]:=Module[{},
     MemberQ[{rType},gate[[1]]],If[Length[gate[[2]]]==2&&NumericQ[gate[[2]][[1]]]&&NumericQ[gate[[2]][[2]]]&&IntegerQ[gate[[3]]],,Throw[StringJoin["There is an R gate ",ToString[gate]," appering as an input in method ",methodName ," that has incorrect parameters."]]],
     MemberQ[{controlledStType},gate[[1]]],
     Map[IsListFormHelp[#]&,gate[[3]]],
-    MemberQ[{BitType},gate[[1]]],
+    MemberQ[{bitType},gate[[1]]],
     If[gate[[2]]>=0 && gate[[2]]<=1,,Throw[StringJoin["The probability p in Bit gate does not belong to [0,1]."]]]
   ];
   Label[LabelEnd];
@@ -4366,14 +4370,16 @@ NearbyIsometry[iso_] := Module[{i,u,v,w},
 
 measType2 = 7;
 controlledStType = 100;
-BitType = 9;
+bitType = 9;
 
 
 (* New gate functions *)
 
 Mmt2[j_,i_] := {measType2,j,i};
-CTRLST[z_,o_,u_,stList_] := Module[{}, Return[{controlledStType, {z,o,u}, stList}]]
-Bit[p_,i_] := {BitType, p, i};
+CTRLST[z_,o_,u_,stList_] := Module[{},
+  Return[{controlledStType, {z,o,u}, stList}]
+]
+Bit[p_,i_] := {bitType, p, i};
 
 (* Functions for MeasuredQCM *)
 
@@ -4703,7 +4709,7 @@ Input:
 ucg: {gates, controls, isoTargets, numQubits}, where gates is a list of isometry, controls and isoTargets are lists of qubits indices and numQubits is the total number of qubits.
 mat: a two dimensional matrix, can be a state or operator
 *)
-ApplyMultiControlledGate[ucg_, mat_] := Module[{gates, controls, isoTargets, numQubits, ids, n, m, targetMats, gateMats, newOrder, asso, mat2, matlist, mat3},
+ApplyMultiplexControlledGate[ucg_, mat_] := Module[{gates, controls, isoTargets, numQubits, ids, n, m, targetMats, gateMats, newOrder, asso, mat2, matlist, mat3},
   {gates, controls, isoTargets, numQubits} = ucg;
   {n,m} = Log2[Dimensions[gates[[1]]]];
   (*Validity check*)
@@ -4767,7 +4773,7 @@ CTRLSTM[controls_,stList_, numQubits_, mat_]:=Module[{zeroControls, oneControls,
       {controlqubit, oneControls}
     ]
   ];
-  ApplyMultiControlledGate[{gates, multiControls, isoTargets, numQubits}, mat]
+  ApplyMultiplexControlledGate[{gates, multiControls, isoTargets, numQubits}, mat]
 ]
 
 (* Find the input ancilla qubits. It will dig into the sub sequence inside a control gate sequence and also take care of the MeasType2 gate *)
