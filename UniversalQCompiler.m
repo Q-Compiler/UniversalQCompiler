@@ -3655,20 +3655,10 @@ Options[KnillDec] = {UseDec->"DecIsometry",Simp->True,FirstColumn->"UCG",FullSim
 would give an error calling f[x,option\[Rule]optionValue]*)
 KnillDec[v_, action:Except[_?OptionQ]:Null,OptionsPattern[]] := 
  Module[{angles, u, vectors, gates1, mats1, mats2, gates2, merge1, 
-   merge2, len, free,gates, f, mat, i, num, n,actionQ},
+   merge2, len, free,gates, f, mat, i, num, n,actionQ,gatesSPSPReverse},
   IsQubitIsometry[v,"KnillDec"];
-  Switch[OptionValue[UseDec],
-  "QSD", f[mat_] := QSD[mat,,{Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}],
-  "KnillDec",f[mat_] := KnillDec[mat,,{UseDec->OptionValue[UseDec],Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}],
-  "ColumnByColumnDec",f[mat_] := ColumnByColumnDec[mat,,{Simp->OptionValue[Simp],FirstColumn->OptionValue[FirstColumn],FullSimp->OptionValue[FullSimp]}],
-  "DecIsometry", f[mat_] := DecIsometry[mat,FullSimp->OptionValue[FullSimp]],
-  "DecIsometryGeneric", f[mat_] := DecIsometryGeneric[mat,FullSimp->OptionValue[FullSimp]],
-  _,Throw[StringForm["Error: The option value for 'UseDec' in KnillDec was not recognized."]]
-  ];
-  
   u = Simplify[IsoToUnitarySpecial[v]];
   n = Log2[Dimensions[u][[1]]];
-  
   (*Note: KnillDecomp does not work on a 1 qubit isometry, 
   so pass to QSD*)
   
@@ -3691,47 +3681,13 @@ n-m identity eigenvalues*)
 preparation
     ---START FROM LEN AND WORK BACKWARDS!!! (matrices representation \
 reverse of gate representation!!!)*)
-    {mats1, gates1} = 
-     StatePrepRecursive[vectors[[len]], 1,{DoDecomposeUnitaries->False,FullSimp->OptionValue[FullSimp]}]; {mats2, gates2} = 
-     StatePrepRecursive[vectors[[len - 1]], 1,{DoDecomposeUnitaries->False,FullSimp->OptionValue[FullSimp]}];
+    
     
     For[i = len, i >= 2, i--,
-     
-     (*append gates from v_(len-i+1) before merged mats*)
-     
-     gates = Join[gates, gates1];
-     
-     (*find merged mats*)
-     merge1 = CT[mats2[[1]]].mats1[[1]];
-     merge2 = CT[mats2[[2]]].mats1[[2]];
-     
-     (*add gates from first merged matrix*)
-     
-     gates = Join[gates, f[merge1]];
-     (*add relabeled gates from second merged matrix*)
-     
-     If[EvenQ[n],
-      gates = 
-       Join[gates, 
-        RelabelQubits[f[merge2], Range[n/2] , Range[(n/2) + 1, n]]],
-      gates = 
-       Join[gates, 
-        RelabelQubits[f[merge2], Range[(n + 1)/2] , 
-         Range[(n + 1)/2, n]]]
-      ];
-     
-     (*append gates from (conjugate transpose of) v_(len-
-     i) after merged mats*)
-     
-     gates = Join[gates, InverseGateList[gates2]];
-     
+     gatesSPSPReverse = MergedStatePreps[vectors[[i]],vectors[[i-1]],FullSimp->OptionValue[FullSimp],UseDec->OptionValue[UseDec],FirstColumn->OptionValue[FirstColumn]];
+     gates=Join[gates,gatesSPSPReverse];
      (*angles*)
-     
      gates = Join[gates, MCGAngleDecomp[angles[[i - 1]], n]];
-     If[i >= 3, {mats1, gates1} = {mats2, gates2};
-      {mats2, gates2} = StatePrepRecursive[vectors[[i - 2]], 1,{DoDecomposeUnitaries->False,FullSimp->OptionValue[FullSimp]}],
-      (*do nothing*)];
-     
      ];
     
     (*Append gates for V_1 SP*)
@@ -3762,6 +3718,56 @@ Throw[StringForm["Error: If condition checking 'OptionValue[Simp]' in KnillDec d
   
   
   (*----------------------- Methods for Knill's decomposition (private)------------------*)
+
+
+Options[MergedStatePreps] = {FullSimp->True,Simp->True, UseDec->"DecIsometry",FirstColumn->"UCG"};
+(*Implements the operation w^\dagger.v for two states v and w using the Plesch Brukner decomposition and merging unitaries to save gates. The option UseDec
+determines the decomposition method used to decompose the unitaries arising in the Plesch-Brukner decomposition. The option FirstColumn determines how the first 
+column is decomposed in the case where UseDec is set to "ColumnByColumnDec"*)
+MergedStatePreps[v_,w_, action:Except[_?OptionQ]:Null,OptionsPattern[]]:=
+Module[{f,gates,mats1, gates1,mats2, gates2, merge1, merge2,n},
+ n = Log2[Dimensions[v][[1]]];
+Switch[OptionValue[UseDec],
+  "QSD", f[mat_] := QSD[mat,,{Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}],
+  "KnillDec",f[mat_] := KnillDec[mat,,{UseDec->OptionValue[UseDec],Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}],
+  "ColumnByColumnDec",f[mat_] := ColumnByColumnDec[mat,,{Simp->OptionValue[Simp],FirstColumn->OptionValue[FirstColumn],FullSimp->OptionValue[FullSimp]}],
+  "DecIsometry", f[mat_] := DecIsometry[mat,FullSimp->OptionValue[FullSimp]],
+  "DecIsometryGeneric", f[mat_] := DecIsometryGeneric[mat,FullSimp->OptionValue[FullSimp]],
+  _,Throw[StringForm["Error: The option value for 'UseDec' in KnillDec was not recognized."]]
+  ];
+ 
+     {mats1, gates1} = 
+     StatePrepRecursive[v, 1,{DoDecomposeUnitaries->False,FullSimp->OptionValue[FullSimp]}]; 
+     {mats2, gates2} = 
+     StatePrepRecursive[w, 1,{DoDecomposeUnitaries->False,FullSimp->OptionValue[FullSimp]}];
+     
+     gates = gates1;
+     
+     (*find merged mats*)
+     merge1 = CT[mats2[[1]]].mats1[[1]];
+     merge2 = CT[mats2[[2]]].mats1[[2]];
+     
+     (*add gates from first merged matrix*)
+     
+     gates = Join[gates, f[merge1]];
+     (*add relabeled gates from second merged matrix*)
+     
+     If[EvenQ[n],
+      gates = 
+       Join[gates, 
+        RelabelQubits[f[merge2], Range[n/2] , Range[(n/2) + 1, n]]],
+      gates = 
+       Join[gates, 
+        RelabelQubits[f[merge2], Range[(n + 1)/2] , 
+         Range[(n + 1)/2, n]]]
+      ];
+     
+     (*append gates from (conjugate transpose of) w after merged mats*)
+     
+     gates = Join[gates, InverseGateList[gates2]];
+
+Return[gates]
+]
 
 (*For an n-by-m matrix v, where n\[LessEqual]m, gives x such that v^\[Dagger].x has first m rows equal to x*)
 GiveX[vMat_] := Module[{nDim,mDim,idMbyN,v2,xMat,x1,x2},
