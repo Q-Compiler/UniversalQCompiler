@@ -49,7 +49,7 @@ The code is mainly based on the following papers:
 
 ## Authors
 
-The first release of UniversalQCompiler (v0.1) was developed by Raban Iten (ETH Zurich) and Roger Colbeck (University of York) from 2016-19 with contributions from Luca Mondada, Oliver Reardon-Smith, Ethan Redmond and Ravjot Singh Kohli:
+The first release of UniversalQCompiler (v0.1) was developed by Raban Iten (ETH Zurich) and Roger Colbeck (University of York) from 2016-19 with contributions from Emanuel Malvetti, Luca Mondada, Gabrielle Pauvert, Oliver Reardon-Smith, Ethan Redmond and Ravjot Singh Kohli:
 
 * Luca Mondada added the Python interface for converting the circuits to QASM.
 * Oliver Reardon-Smith added functionality to cope with small cases, wrote the first version of the visualisation code and implemented several bug fixes.
@@ -57,7 +57,7 @@ The first release of UniversalQCompiler (v0.1) was developed by Raban Iten (ETH 
 * Ravjot Singh Kohli wrote the first version of the code for decomposing isometries with the Column-by-Column decomposition.
 * Gabrielle Pauvert added functionality to decompose instruments
 
-Luca Mondada worked on the code as a semester student at the Institute for Theoretical Physics at ETH Zürich under supervision of Raban Iten.
+Emanuel Malvetti and Luca Mondada worked on the code as semester students at the Institute for Theoretical Physics at ETH Zürich under supervision of Raban Iten.
 
 Ravjot Singh Kohli, Ethan Redmond and Gabrielle Pauvert worked on the code while summer students in the Department of Mathematics at the University of York under supervision of Roger Colbeck.
 
