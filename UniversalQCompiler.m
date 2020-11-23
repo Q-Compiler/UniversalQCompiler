@@ -4840,7 +4840,7 @@ DecPermutedDiagonalIsometry[V_,numeric_] := Module[{iso, vec, n, m, gates, gates
 PickRandomEnvelope[dim1_,dim2_]:=Module[{out={},col,i,j,n=1,blanks=0,env={},dig,digs={}},dig=RandomInteger[];digs=Insert[digs,dig,-1];For[i=1,i<=dim1,i++,col=Flatten[{Table[0,{x,1,blanks}],Table[1,{x,1,If[env==={},i,Max[env[[-1]]-1,i]]-blanks}]}];j=If[env==={},i+1,Max[env[[-1]],i+1]];(*If[j>dim2,j=dim2];*)
 If[dig==0&&j==i+1,blanks=i];While[dig!=0&&j<=dim2,col=Insert[col,dig,-1];j++;dig=RandomInteger[];digs=Insert[digs,dig,-1]];If[j<=dim2&&dig==0,dig=RandomInteger[];digs=Insert[digs,dig,-1]];env=Insert[env,j,-1];col=PadRight[col,dim2];out=Insert[out,col,-1]];{env,Transpose[out],Drop[digs,-1]}]
 
-Options[PickRandomSparseIsometry]={permute->False};
+Options[PickRandomSparseIsometry]={permute->True};
 PickRandomSparseIsometry[dim1_,dim2_,env2:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{i,j,vec,out={},count=0,countmax=100,env},
 If[env2===Null,env=PickRandomEnvelope[dim1,dim2][[1]],env=env2];
 While[count<=countmax&&(out==={}||Chop[CT[out].out-IdentityMatrix[dim1]]!=0*IdentityMatrix[dim1]),out={};
@@ -4848,9 +4848,9 @@ For[i=1,i<=dim1,i++,vec=Transpose[{PadRight[Flatten[PickRandomPsi[env[[i]]-1]],d
 For[j=1,j<i,j++,vec=vec-Tr[CT[out[[j]]].vec]*out[[j]]];If[Chop[Tr[CT[vec].vec]]==0,count++,vec=vec/(Tr[CT[vec].vec])^(1/2)];
 out=Insert[out,vec,-1]];If[out==={},,out=Transpose[Map[Flatten[#]&,out]]]];
 If[count==1+countmax,Print["PickRandomSparseIsometry: Unable to find isometry for given envelope"]];
-If[Not[OptionValue[permute]],out=Permute[Transpose[Permute[Transpose[out],RandomPermutation[dim1]]],RandomPermutation[dim2]]];out]
+If[OptionValue[permute],out=Permute[Transpose[Permute[Transpose[out],RandomPermutation[dim1]]],RandomPermutation[dim2]]];out]
 
-Options[RPickRandomSparseIsometry]={permute->False};
+Options[RPickRandomSparseIsometry]={permute->True};
 RPickRandomSparseIsometry[dim1_,dim2_,env2:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{i,j,vec,out={},count=0,countmax=100,env},
 If[env2===Null,env=PickRandomEnvelope[dim1,dim2][[1]],env=env2];
 While[count<=countmax&&(out==={}||Chop[CT[out].out-IdentityMatrix[dim1]]!=0*IdentityMatrix[dim1]),out={};
@@ -4858,7 +4858,7 @@ For[i=1,i<=dim1,i++,vec=Transpose[{PadRight[Flatten[RPickRandomPsi[env[[i]]-1]],
 For[j=1,j<i,j++,vec=vec-Tr[CT[out[[j]]].vec]*out[[j]]];If[Chop[Tr[CT[vec].vec]]==0,count++,vec=vec/(Tr[CT[vec].vec])^(1/2)];
 out=Insert[out,vec,-1]];If[out==={},,out=Transpose[Map[Flatten[#]&,out]]]];
 If[count==1+countmax,Print["PickRandomSparseIsometry: Unable to find isometry for given envelope"]];
-If[Not[OptionValue[permute]],out=Permute[Transpose[Permute[Transpose[out],RandomPermutation[dim1]]],RandomPermutation[dim2]]];out]
+If[OptionValue[permute],out=Permute[Transpose[Permute[Transpose[out],RandomPermutation[dim1]]],RandomPermutation[dim2]]];out]
 
 
    
