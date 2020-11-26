@@ -4805,7 +4805,7 @@ DecBitonicSort[i_, j_, listIn_,numeric_] := Module[{a,b,n, d, k, up, gates,list}
 			If[(list[[a]] > list[[b]]) == up,
 				list[[{a,b}]] = list[[{b,a}]];
 				gates = Join[gates,If[numeric,N[{{{0,1},{1,0}}}],{{{0,1},{1,0}}}]],
-				gates = Join[gates,If[numeric,N[{{{0,1},{1,0}}}],{{{0,1},{1,0}}}]]]
+				gates = Join[gates,If[numeric,N[{{{1,0},{0,1}}}],{{{1,0},{0,1}}}]]]
 		]
     ];
    {DecUCGUpToDiagonal[gates, SetMinus[Range[n], {n-i+j}], n-i+j, n], list}
