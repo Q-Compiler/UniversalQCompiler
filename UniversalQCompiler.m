@@ -147,6 +147,11 @@ DecIso12::usage="DecIso12[v,(action)] decomposes an isometry v from 1 to 2 qubit
 (*Optimal decomposition of an isometry*)
 DecIsometry::usage="DecIsometry[v,(action)] decomposes an isometry v from m to n qubits acting on the n qubits whose numbers are given in the list action (default: action=Range[n]) into a sequence of single-qubit and C-NOT gates using the decomposition scheme that achieves the lowest known C-NOT count."
 DecIsometryGeneric::usage="DecIsometryGeneric[v,(action)] decomposes an isometry v from m to n qubits acting on the n qubits whose numbers are given in the list action (default: action=Range[n]) into a sequence of single-qubit and C-NOT gates using the decomposition scheme that achieves the lowest known C-NOT count for a generic isometry of the given dimensions."
+(*Housholder decomposition*)
+DenseHouseholderDec::usage="DenseHouseholderDec[iso] returns a circuit implementing the isometry iso using the dense Householder decomposition."
+(*Decompositions for sparse isometries*)
+SparseStatePreparation::usage="SparseStatePreparation[vec] returns a circuit implementing sparse state preparation for a sparse state vec."
+SparseHouseholderDec::usage="SparseHouseholderDec[iso] returns a circuit implementing the isometry iso using the sparse Householder decomposition."
 (*State preparation (Plesch and Brukner)*)
 StatePreparation::usage="StatePreparation[v,(action)] prepares an n qubit state (i.e. a \!\(\*SuperscriptBox[\(2\), \(n\)]\)-dimensional normalized column vector) v on the qubits listed in action (default: action=Range[n]) into single-qubit and C-NOT gates (see the full documentation for more details)."
 (*Knill's decomposition for isometries*)
@@ -160,33 +165,33 @@ POVMToIsometry::usage="TBA."
 (*Decompose channels and POVMs in the quantum ciruit model*)
 DecChannelInQCM::usage="TBA."
 DecPOVMInQCM::usage="TBA."
-PrepareForQASM::usage="PrepareForQASM[gatelist] takes a list of gates and prepares it into a form suitable for use with the python script that converts to QASM."
-PickRandomCircuitIsometry::usage="PickRandomCircuitIsometry[m,n,t] creates a random circuit from m qubits to n qubits with t CNOTs, where an arbitrary single qubit unitary is included at the start and after each CNOT. With Option TotGates->True, the value of t is the total number of gates and these are placed randomly."
-RxRGateDecomp::usage="RxRGateDecomp[u] takes a single qubit unitary u and outputs (a,b,c,d) such that u is equal to Rx[a] followed by R[b,c] up to the phase E^(I*d)."
-ReplaceCNOTWithXX::usage="ReplaceCNOTWithXX[st] takes a gate list and replaces all CNOT gates with XX gates and additional single qubit rotations."
-ReplaceXXWithCNOT::usage="ReplaceXXWithCNOT[st] takes a gate list and replaces all XX gates with CNOTs and additional single qubit rotations."
-CNOTRotationsToXXRGates::usage="CNOTRotationsToXXRGates[st] takes a gate list and replaces all CNOT and single-qubit rotations by XX and R gates."
-XXRGatesToCNOTRotations::usage="XXRGatesToCNOTRotations[st] takes a gate list and replaces all XX and R gates with CNOTs and single-qubit rotations."
-PickRandomInstrument::usage="PickRandomInstrument[dim1, dim2, nChan, nKraus] chooses a random instrument from dimension dim1 to dim2 containing num1 channels, each containing num2 Kraus operators.
-  If nKraus = {nMin, nMax} is a list of two elements, each channel contains a random number n of Kraus operators such that nMin <= n <= nMax (uniform probability).
-  If nKraus = {...} is a list of three or more elements, each channel contains a random number n of Kraus operators such that n is in nKraus (uniform probability)."
-RPickRandomInstrument::usage="RPickRandomInstrument[dim1, dim2, nChan, nKraus] behaves as PickRandomInstrument but gives real output."
-FPickRandomInstrument::usage="FPickRandomInstrument[dim1, dim2, nChan, nKraus] behaves as PickRandomInstrument but gives rational output."
 IsoFromInstrument::usage="IsoFromInstrument[instr, (actionAndAncilla)] constructs an isometry from instrument instr, which corresponds to the action of the instrument on a wider system, before tracing out and measuring ancilla qubits.
   Returns the isometry and the number of ancilla qubits used."
 DecInstrumentInQCM::usage="DecInstrumentInQCM[instr, (actionAndAncilla)] decomposes instrument instr from m to n qubits into a sequence of gates using the decomposition scheme that achieves the lowest known C-NOT count.
   The instrument uses q ancilla qubits whose numbers are given in the list actionAndAncilla[[1]] (default : range[q]), with q the maximum number of Kraus operators of a channel,
   and it acts on the n qubits whose numbers are given in the list actionAndAncilla[[2]] (default: action=Range[q+1,q+n])."
-NearbyIsometry::usage="NearbyIsometry[iso] uses the singular value decomposition to generate an isometry near to iso."
-DenseHouseholderDec::usage="DenseHouseholderDec[iso] returns a circuit implementing the isometry iso using the dense Householder decomposition."
+(*Create random objects, such as circuits or instruments*)
+PickRandomCircuitIsometry::usage="PickRandomCircuitIsometry[m,n,t] creates a random circuit from m qubits to n qubits with t CNOTs, where an arbitrary single qubit unitary is included at the start and after each CNOT. With Option TotGates->True, the value of t is the total number of gates and these are placed randomly."
+PickRandomInstrument::usage="PickRandomInstrument[dim1, dim2, nChan, nKraus] chooses a random instrument from dimension dim1 to dim2 containing num1 channels, each containing num2 Kraus operators.
+  If nKraus = {nMin, nMax} is a list of two elements, each channel contains a random number n of Kraus operators such that nMin <= n <= nMax (uniform probability).
+  If nKraus = {...} is a list of three or more elements, each channel contains a random number n of Kraus operators such that n is in nKraus (uniform probability)."
+RPickRandomInstrument::usage="RPickRandomInstrument[dim1, dim2, nChan, nKraus] behaves as PickRandomInstrument but gives real output."
+FPickRandomInstrument::usage="FPickRandomInstrument[dim1, dim2, nChan, nKraus] behaves as PickRandomInstrument but gives rational output."
+PickRandomSparseIsometry::usage="PickRandomSparseIsometry[dim1,dim2] generates a random sparse isometry from dimension dim1 to dim2."
+RPickRandomSparseIsometry::usage="PickRandomSparseIsometry[dim1,dim2] generates a random sparse isometry from dimension dim1 to dim2."
 PickRandomSparsePsi::usage="PickRandomSparsePsi[dim,s] generates a random pure state with dimension dim and with s non-zero elements."
 RPickRandomSparsePsi::usage="RPickRandomSparsePsi[dim,s] generates a random real pure state with dimension dim and with s non-zero elements."
 FPickRandomSparsePsi::usage="FPickRandomSparsePsi[dim,s,tol] generates a random analytic real pure state with dimension dim and with s non-zero elements."
+(*Various helper methods*)
+PrepareForQASM::usage="PrepareForQASM[gatelist] takes a list of gates and prepares it into a form suitable for use with the python script that converts to QASM."
+RxRGateDecomp::usage="RxRGateDecomp[u] takes a single qubit unitary u and outputs (a,b,c,d) such that u is equal to Rx[a] followed by R[b,c] up to the phase E^(I*d)."
+ReplaceCNOTWithXX::usage="ReplaceCNOTWithXX[st] takes a gate list and replaces all CNOT gates with XX gates and additional single qubit rotations."
+ReplaceXXWithCNOT::usage="ReplaceXXWithCNOT[st] takes a gate list and replaces all XX gates with CNOTs and additional single qubit rotations."
+CNOTRotationsToXXRGates::usage="CNOTRotationsToXXRGates[st] takes a gate list and replaces all CNOT and single-qubit rotations by XX and R gates."
+XXRGatesToCNOTRotations::usage="XXRGatesToCNOTRotations[st] takes a gate list and replaces all XX and R gates with CNOTs and single-qubit rotations."
+NearbyIsometry::usage="NearbyIsometry[iso] uses the singular value decomposition to generate an isometry near to iso."
 PivotingDec::usage="PivotingDec[vec] returns a circuit which implements the pivoting algorithm for vec, along with the row qubits, column qubits, final column and implemented permutation of the entries of the state vector."
-SparseStatePreparation::usage="SparseStatePreparation[vec] returns a circuit implementing sparse state preparation for a sparse state vec."
-SparseHouseholderDec::usage="SparseHouseholderDec[iso] returns a circuit implementing the isometry iso using the sparse Householder decomposition."
-PickRandomSparseIsometry::usage="PickRandomSparseIsometry[dim1,dim2] generates a random sparse isometry from dimension dim1 to dim2."
-RPickRandomSparseIsometry::usage="PickRandomSparseIsometry[dim1,dim2] generates a random sparse isometry from dimension dim1 to dim2."
+
 
 Begin["`Private`"];
 
@@ -4376,6 +4381,9 @@ DenseHouseholderDec[iso_,action_:Null,OptionsPattern[]] := Module[{V, i, m, n, v
 	If[OptionValue[Simp], gates=SimplifyGateList[InverseGateList[gates]], gates=InverseGateList[gates]];
 	k = Max[Array[gates[[#,3]]&,Length[gates]]];
 	gates = Join[Table[{ancillaType,0,j},{j,Join[Range[1,n-m],Range[n+1,k]]}],gates];
+		gates = Join[Table[{postselType,0,j},{j,Range[n+1,k]}],gates];
+	
+	
 	gates
 ];
 
