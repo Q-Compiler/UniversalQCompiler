@@ -39,7 +39,8 @@ An overview over the package UniversalQCompiler and some theoretical background 
 
 The code is mainly based on the following papers:
 
-* Raban Iten, Roger Colbeck, Ivan Kukuljan, Jonathan Home, Matthias Christandl, Phys. Rev. A 93, 032318 (2016).
+* Raban Iten, Roger Colbeck, Ivan Kukuljan, Jonathan Home, and Matthias Christandl, Phys. Rev. A 93, 032318 (2016).
+* Emanuel Malvetti, Raban Iten, and Roger Colbeck,	arXiv:2006.00016 (2020).
 * M. Plesch and Č. Brukner, Phys. Rev. A 83, 032302 (2011).
 * O. Giraud, M. Žnidarič, and B. Georgeot, Phys. Rev. A 80, 042309 (2009).
 * V. V. Shende, S. S. Bullock, and I. L. Markov, IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems 25, 1000 (2006).
@@ -55,7 +56,8 @@ The first release of UniversalQCompiler (v0.1) was developed by Raban Iten (ETH 
 * Oliver Reardon-Smith added functionality to cope with small cases, wrote the first version of the visualisation code and implemented several bug fixes.
 * Ethan Redmond added functionality to compute the Knill decomposition and do state preparation.
 * Ravjot Singh Kohli wrote the first version of the code for decomposing isometries with the Column-by-Column decomposition.
-* Gabrielle Pauvert added functionality to decompose instruments
+* Gabrielle Pauvert added functionality to decompose instruments.
+* Emanuel Malvetti developed code for the decomposition of (sparse) isometries using the Householder decomposition.
 
 Emanuel Malvetti and Luca Mondada worked on the code as semester students at the Institute for Theoretical Physics at ETH Zürich under supervision of Raban Iten.
 
