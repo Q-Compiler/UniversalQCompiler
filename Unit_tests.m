@@ -1598,6 +1598,68 @@ Print["All tests for Knill's decomposition pass."],,
 )]
 
 
+(*Unit tests for (sparse and dense) Housholder decomposition*)
+
+
+(*Check Methods based on Householder decomposition*)
+
+
+checkDenseHouseholder[v_]:=Module[{st,iso},( 
+st=DenseHouseholderDec[v];
+iso=NCreateOperationFromGateList[st];
+isIdentityUpToPhase[N[ConjugateTranspose[v].iso]]
+)
+]
+checkSparseHouseholder[v_]:=Module[{st,iso},( 
+st=SparseHouseholderDec[v];
+iso=NCreateOperationFromGateList[st];
+isIdentityUpToPhase[N[ConjugateTranspose[v].iso]]
+)
+]
+
+
+(*Tests for (sparse and dense) Householder decomposition*)
+
+
+TestDenseHouseholder:=Module[{error},( 
+error=0;
+If[Quiet[Check[checkDenseHouseholder[PickRandomIsometry[2,2^4]],error=1;False]]&&
+Quiet[Check[checkDenseHouseholder[PickRandomIsometry[1,2^3]],error=2;False]]&&
+Quiet[Check[checkDenseHouseholder[randPermutMat[2^1,2^2]],error=3;False]]&&
+Quiet[Check[checkDenseHouseholder[N[randPermutMat[2^2,2^4]]],error=4;False]]&&
+Quiet[Check[checkDenseHouseholder[PickRandomIsometry[1,2^2]],error=5;False]]&&
+Quiet[Check[checkDenseHouseholder[PickRandomIsometry[2^3,2^3]],error=6;False]],
+True,
+Print["Error in DenseHouseholderDec with error message code ",error];False
+]
+)]
+
+
+TestSparseHouseholder:=Module[{error},( 
+error=0;
+If[Quiet[Check[checkSparseHouseholder[PickRandomIsometry[2,2^4]],error=1;False]]&&
+Quiet[Check[checkSparseHouseholder[PickRandomIsometry[1,2^3]],error=2;False]]&&
+Quiet[Check[checkSparseHouseholder[randPermutMat[2^1,2^2]],error=3;False]]&&
+Quiet[Check[checkSparseHouseholder[N[randPermutMat[2^2,2^4]]],error=4;False]]&&
+Quiet[Check[checkSparseHouseholder[PickRandomSparseIsometry[1,2^2]],error=5;False]]&&
+Quiet[Check[checkSparseHouseholder[PickRandomSparseIsometry[2^3,2^3]],error=6;False]],
+True,
+Print["Error in SparseHouseholderDec with error message code ",error];False
+]
+)]
+
+
+(*All tests for Housholder decomposition*)
+
+
+testHouseholderAll := Module[{},(
+If[TestDenseHouseholder&&TestSparseHouseholder,
+Print["All tests for (dense and sparse) Householder decomposition pass."],,
+ Print["testHouseholderAll neither returned True nor False"]
+]
+)]
+
+
 (*Unit tests for state preparaion (Plesch-Brukner decomposition)*)
 
 
@@ -1634,10 +1696,59 @@ Print["Error in StatePrepRecursive with error message code ",error];False
 
 testStatePreparationAll := Module[{},(
 If[TestStatePreparation,
-Print["All tests for State preparation pass."],,
+Print["All tests for state preparation pass."],,
  Print["testStatePreparationAll neither returned True nor False"]
 ]
 )]
+
+
+(*Unit tests for sparse state preparaion*)
+
+
+(*Checks for sparse state preparation*)
+
+
+checkSparseStatePreparation[psi_]:=Module[{st,iso},( 
+st=SparseStatePreparation[psi];
+iso=NCreateOperationFromGateList[st];
+isIdentityUpToPhase[N[ConjugateTranspose[psi].iso]]
+)
+]
+
+
+(*Tests for sparse state preparation*)
+
+
+TestSparseStatePreparation:=Module[{error},( 
+error=0;
+If[Quiet[Check[checkSparseStatePreparation[PickRandomPsi[2^4]],error=1;False]]&&
+Quiet[Check[checkSparseStatePreparation[PickRandomSparsePsi[2^4,2^3]],error=2;False]]&&
+Quiet[Check[checkSparseStatePreparation[PickRandomPsi[2^4]],error=3;False]]&&
+Quiet[Check[checkSparseStatePreparation[N[randPermutMat[1,8]]],error=1;False]]&&
+Quiet[Check[checkSparseStatePreparation[N[randPermutMat[1,8]]],error=2;False]]&&
+Quiet[Check[checkSparseStatePreparation[N[randPermutMat[1,8]]],error=3;False]]
+,
+True,
+Print["Error in SparseStatePreparation with error message code ",error];False
+]
+)]
+
+
+(*All tests for sparse state preparation*)
+
+
+testSparseStatePreparationAll := Module[{},(
+If[TestSparseStatePreparation,
+Print["All tests for sparse state preparation pass."],,
+ Print["testSparseStatePreparationAll neither returned True nor False"]
+]
+)]
+
+
+(*Unit tests for CNOT \[TwoWayRule] XX transformation*)
+
+
+(*Checks for CNOT \[TwoWayRule] XX transformation*)
 
 
 CheckCNOTtoXX[v_]:=Module[{st,st2,iso,ch},
@@ -1650,6 +1761,10 @@ st=DecIsometryGeneric[v];st2=CNOTRotationsToXXRGates[st];
 st3=XXRGatesToCNOTRotations[st2];
 iso=CreateOperationFromGateList[st3,Log[2,Dimensions[v][[1]]]];ch=CT[v].iso;
 Chop[ch/ch[[1,1]]-IdentityMatrix[Dimensions[iso][[2]]],10^-6]==0*IdentityMatrix[Dimensions[iso][[2]]]]
+
+
+(*Tests for CNOT \[TwoWayRule] XX transformation*)
+
 
 TestCNOTtoXX:=Module[{error=0},If[Quiet[Check[CheckCNOTtoXX[PickRandomIsometry[2^2,2^2]],error=1;False]]&&
 Quiet[Check[CheckCNOTtoXX[PickRandomIsometry[2^2,2^3]],error=2;False]]&&
@@ -1674,6 +1789,10 @@ Quiet[Check[CheckXXtoCNOT[N[randPermutMat[8,8]]],error=7;False]]
 True,
 Print["Error in CheckXXtoCNOT with error message code ",error];False
 ]]
+
+
+(*All tests for CNOT \[TwoWayRule] XX transformation*)
+
 
 testXXCNOTAll := Module[{},(
 If[TestCNOTtoXX&&TestXXtoCNOT,
@@ -1752,7 +1871,7 @@ Print["testInstrumentDecompositions neither returned True nor False"]]
 
 
 (*Run all tests*)
-runAllTests:=Module[{},(testAllBasicMethods;testUCGs;testAllDiagGateMethods;testIsoSmall;testCCDec;testDec2Qubit;testDecSingleQubit;testQSDAll;testQSD;testStatePreparationAll;testAllMCGMethods;testKnill;testIsometryDecompositions;testStinespring;testPOVM;testXXCNOTAll;testChannelDecompositions;testInstrumentDecompositions)]
+runAllTests:=Module[{},(testAllBasicMethods;testUCGs;testAllDiagGateMethods;testIsoSmall;testCCDec;testDec2Qubit;testDecSingleQubit;testQSDAll;testQSD;testStatePreparationAll;testSparseStatePreparationAll;testAllMCGMethods;testKnill;testHouseholderAll;testIsometryDecompositions;testStinespring;testPOVM;testXXCNOTAll;testChannelDecompositions;testInstrumentDecompositions)]
 
 
 Timing[runAllTests]
