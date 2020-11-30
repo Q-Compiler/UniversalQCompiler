@@ -4381,7 +4381,7 @@ DenseHouseholderDec[iso_,action_:Null,OptionsPattern[]] := Module[{V, i, m, n, v
 	If[OptionValue[Simp], gates=SimplifyGateList[InverseGateList[gates]], gates=InverseGateList[gates]];
 	k = Max[Array[gates[[#,3]]&,Length[gates]]];
 	gates = Join[Table[{ancillaType,0,j},{j,Join[Range[1,n-m],Range[n+1,k]]}],gates];
-		gates = Join[Table[{postselType,0,j},{j,Range[n+1,k]}],gates];
+		gates = Join[gates,Table[{postselType,0,j},{j,Range[n+1,k]}]];
 	
 	
 	gates
@@ -4758,7 +4758,7 @@ SparseHouseholderDec[iso_,action_:Null,OptionsPattern[]] := Module[{V,i,j,m,n,k,
 		
 		gates = Join[Table[{ancillaType,0,j},{j,Range[n+1,k]}],gates];
 		gates = Join[Table[{ancillaType,0,j},{j,Range[1,n-m]}],gates];
-		gates = Join[Table[{postselType,0,j},{j,Range[n+1,k]}],gates];
+		gates = Join[gates,Table[{postselType,0,j},{j,Range[n+1,k]}]];
 		
 		actionQ=
 Switch[action, 
