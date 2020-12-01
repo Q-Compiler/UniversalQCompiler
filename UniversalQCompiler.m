@@ -1789,6 +1789,7 @@ Switch[action,
 Null,Range[n], 
 _, action
 ];
+If[Length[Union[dia]]===1,Return[{}]];
 st=DecDiagGateRec[dia,Range[n],n];
 If[actionQ==Range[n],,st=RelabelQubits[st,Range[n],actionQ]];
 Reverse[st]
@@ -4363,26 +4364,29 @@ DenseHouseholderDec[iso_,action_:Null,OptionsPattern[]] := Module[{V, i, m, n, v
 	gates = {};
 	For[i = 1, i <= 2^m, i++, 
 		vec = ComputeHouseholderVector[V[[All, i;;i]], i];
-		V = ApplyStandardHouseholderReflection[vec,V];
-		vectors = Join[vectors, {vec}]
+		If[Norm[vec[[i]]]!=1,
+			V = ApplyStandardHouseholderReflection[vec,V];
+			vectors = Join[vectors, {vec}]]
 	];
+
+	If[Length[vectors]==0,
+		Return[Table[{ancillaType,0,j},{j,1,n-m}]]];
 	
 	gatesSP = StatePrepRecursive[vectors[[1]], 1,{FullUnitary->True,FullSimp->OptionValue[FullSimp]}];
 	gates = Join[gates, Reverse[InverseGateList[gatesSP]]];
 	gates = Join[gates, ReflectionGate[n]];
-	For[i = 2, i <= 2^m, i++, 
+	For[i = 2, i <= Length[vectors], i++, 
 		gates = Join[gates, MergedStatePreps[vectors[[i-1]],vectors[[i]]]];
 		gates = Join[gates, ReflectionGate[n]]
 	];
-	gatesSP = StatePrepRecursive[vectors[[2^m]], 1,{FullUnitary->True,FullSimp->OptionValue[FullSimp]}];
+	gatesSP = StatePrepRecursive[vectors[[Length[vectors]]], 1,{FullUnitary->True,FullSimp->OptionValue[FullSimp]}];
 	gates = Join[gates, Reverse[gatesSP]];
 	
 	gates = Join[gates, InverseGateList[DecDiagGate[Diagonal[V], Range[n-m+1,n]]]];
 	If[OptionValue[Simp], gates=SimplifyGateList[InverseGateList[gates]], gates=InverseGateList[gates]];
 	k = Max[Array[gates[[#,3]]&,Length[gates]]];
 	gates = Join[Table[{ancillaType,0,j},{j,Join[Range[1,n-m],Range[n+1,k]]}],gates];
-		gates = Join[gates,Table[{postselType,0,j},{j,Range[n+1,k]}]];
-	
+	gates = Join[gates,Table[{postselType,0,j},{j,Range[n+1,k]}]];
 	
 	gates
 ];
@@ -4753,12 +4757,13 @@ SparseHouseholderDec[iso_,action_:Null,OptionsPattern[]] := Module[{V,i,j,m,n,k,
   	
 	If[IsNotPermutedDiagonal[V] == False,
 		gates=Join[DecPermutedDiagonalIsometry[V,numeric], InverseGateList[gates]];
-		If[OptionValue[Simp],gates=SimplifyGateList[gates]];
-		k = Max[Array[gates[[#,3]]&,Length[gates]]];
 		
-		gates = Join[Table[{ancillaType,0,j},{j,Range[n+1,k]}],gates];
+		If[OptionValue[Simp],gates=SimplifyGateList[gates]];
+		If[Length[gates]>0,
+			k = Max[Array[gates[[#,3]]&,Length[gates]]];
+			gates = Join[Table[{ancillaType,0,j},{j,Range[n+1,k]}],gates];
+			gates = Join[gates,Table[{postselType,0,j},{j,Range[n+1,k]}]]];
 		gates = Join[Table[{ancillaType,0,j},{j,Range[1,n-m]}],gates];
-		gates = Join[gates,Table[{postselType,0,j},{j,Range[n+1,k]}]];
 		
 		actionQ=
 Switch[action, 
@@ -4785,7 +4790,7 @@ If[actionQ==Range[n],,st=RelabelQubits[st,Range[n],actionQ]];
 	gates*)
 ];
 
-DecBitonicSort[i_, j_, listIn_,numeric_] := Module[{a,b,n, d, k, up, gates,list},
+DecBitonicSort[i_, j_, listIn_,numeric_] := Module[{a,b,n,d,k,up,gates,list},
 	list = listIn;
 	d = BitShiftLeft[1, i - j];
 	n = Log2[Length[list]];
@@ -4816,6 +4821,7 @@ DecBitonicSort[i_, j_, listIn_,numeric_] := Module[{a,b,n, d, k, up, gates,list}
 DecPermutationUpToDiagonal[iso_,numeric_] := Module[{i, j, n, m, list, gates, bitonicGates},
 	{n, m} = Map[Log2, Dimensions[iso]];
 	list = Table[iso[[All, k]]["NonzeroPositions"][[1, 1]], {k, 1, 2^m}];
+	If[list==Sort[list],Return[{}]];
 	gates = {};
 	For[i = 0, i < m, i++,
 		For[j = 0, j <= i, j++,
