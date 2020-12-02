@@ -147,6 +147,11 @@ DecIso12::usage="DecIso12[v,(action)] decomposes an isometry v from 1 to 2 qubit
 (*Optimal decomposition of an isometry*)
 DecIsometry::usage="DecIsometry[v,(action)] decomposes an isometry v from m to n qubits acting on the n qubits whose numbers are given in the list action (default: action=Range[n]) into a sequence of single-qubit and C-NOT gates using the decomposition scheme that achieves the lowest known C-NOT count."
 DecIsometryGeneric::usage="DecIsometryGeneric[v,(action)] decomposes an isometry v from m to n qubits acting on the n qubits whose numbers are given in the list action (default: action=Range[n]) into a sequence of single-qubit and C-NOT gates using the decomposition scheme that achieves the lowest known C-NOT count for a generic isometry of the given dimensions."
+(*Housholder decomposition*)
+DenseHouseholderDec::usage="DenseHouseholderDec[iso] returns a circuit implementing the isometry iso using the dense Householder decomposition."
+(*Decompositions for sparse isometries*)
+SparseStatePreparation::usage="SparseStatePreparation[vec] returns a circuit implementing sparse state preparation for a sparse state vec."
+SparseHouseholderDec::usage="SparseHouseholderDec[iso] returns a circuit implementing the isometry iso using the sparse Householder decomposition."
 (*State preparation (Plesch and Brukner)*)
 StatePreparation::usage="StatePreparation[v,(action)] prepares an n qubit state (i.e. a \!\(\*SuperscriptBox[\(2\), \(n\)]\)-dimensional normalized column vector) v on the qubits listed in action (default: action=Range[n]) into single-qubit and C-NOT gates (see the full documentation for more details)."
 (*Knill's decomposition for isometries*)
@@ -160,24 +165,33 @@ POVMToIsometry::usage="TBA."
 (*Decompose channels and POVMs in the quantum ciruit model*)
 DecChannelInQCM::usage="TBA."
 DecPOVMInQCM::usage="TBA."
-PrepareForQASM::usage="PrepareForQASM[gatelist] takes a list of gates and prepares it into a form suitable for use with the python script that converts to QASM."
-PickRandomCircuitIsometry::usage="PickRandomCircuitIsometry[m,n,t] creates a random circuit from m qubits to n qubits with t CNOTs, where an arbitrary single qubit unitary is included at the start and after each CNOT. With Option TotGates->True, the value of t is the total number of gates and these are placed randomly."
-RxRGateDecomp::usage="RxRGateDecomp[u] takes a single qubit unitary u and outputs (a,b,c,d) such that u is equal to Rx[a] followed by R[b,c] up to the phase E^(I*d)."
-ReplaceCNOTWithXX::usage="ReplaceCNOTWithXX[st] takes a gate list and replaces all CNOT gates with XX gates and additional single qubit rotations."
-ReplaceXXWithCNOT::usage="ReplaceXXWithCNOT[st] takes a gate list and replaces all XX gates with CNOTs and additional single qubit rotations."
-CNOTRotationsToXXRGates::usage="CNOTRotationsToXXRGates[st] takes a gate list and replaces all CNOT and single-qubit rotations by XX and R gates."
-XXRGatesToCNOTRotations::usage="XXRGatesToCNOTRotations[st] takes a gate list and replaces all XX and R gates with CNOTs and single-qubit rotations."
-PickRandomInstrument::usage="PickRandomInstrument[dim1, dim2, nChan, nKraus] chooses a random instrument from dimension dim1 to dim2 containing num1 channels, each containing num2 Kraus operators.
-  If nKraus = {nMin, nMax} is a list of two elements, each channel contains a random number n of Kraus operators such that nMin <= n <= nMax (uniform probability).
-  If nKraus = {...} is a list of three or more elements, each channel contains a random number n of Kraus operators such that n is in nKraus (uniform probability)."
-RPickRandomInstrument::usage="RPickRandomInstrument[dim1, dim2, nChan, nKraus] behaves as PickRandomInstrument but gives real output."
-FPickRandomInstrument::usage="FPickRandomInstrument[dim1, dim2, nChan, nKraus] behaves as PickRandomInstrument but gives rational output."
 IsoFromInstrument::usage="IsoFromInstrument[instr, (actionAndAncilla)] constructs an isometry from instrument instr, which corresponds to the action of the instrument on a wider system, before tracing out and measuring ancilla qubits.
   Returns the isometry and the number of ancilla qubits used."
 DecInstrumentInQCM::usage="DecInstrumentInQCM[instr, (actionAndAncilla)] decomposes instrument instr from m to n qubits into a sequence of gates using the decomposition scheme that achieves the lowest known C-NOT count.
   The instrument uses q ancilla qubits whose numbers are given in the list actionAndAncilla[[1]] (default : range[q]), with q the maximum number of Kraus operators of a channel,
   and it acts on the n qubits whose numbers are given in the list actionAndAncilla[[2]] (default: action=Range[q+1,q+n])."
+(*Create random objects, such as circuits or instruments*)
+PickRandomCircuitIsometry::usage="PickRandomCircuitIsometry[m,n,t] creates a random circuit from m qubits to n qubits with t CNOTs, where an arbitrary single qubit unitary is included at the start and after each CNOT. With Option TotGates->True, the value of t is the total number of gates and these are placed randomly."
+PickRandomInstrument::usage="PickRandomInstrument[dim1, dim2, nChan, nKraus] chooses a random instrument from dimension dim1 to dim2 containing num1 channels, each containing num2 Kraus operators.
+  If nKraus = {nMin, nMax} is a list of two elements, each channel contains a random number n of Kraus operators such that nMin <= n <= nMax (uniform probability).
+  If nKraus = {...} is a list of three or more elements, each channel contains a random number n of Kraus operators such that n is in nKraus (uniform probability)."
+RPickRandomInstrument::usage="RPickRandomInstrument[dim1, dim2, nChan, nKraus] behaves as PickRandomInstrument but gives real output."
+FPickRandomInstrument::usage="FPickRandomInstrument[dim1, dim2, nChan, nKraus] behaves as PickRandomInstrument but gives rational output."
+PickRandomSparseIsometry::usage="PickRandomSparseIsometry[dim1,dim2] generates a random sparse isometry from dimension dim1 to dim2."
+RPickRandomSparseIsometry::usage="PickRandomSparseIsometry[dim1,dim2] generates a random sparse isometry from dimension dim1 to dim2."
+PickRandomSparsePsi::usage="PickRandomSparsePsi[dim,s] generates a random pure state with dimension dim and with s non-zero elements."
+RPickRandomSparsePsi::usage="RPickRandomSparsePsi[dim,s] generates a random real pure state with dimension dim and with s non-zero elements."
+FPickRandomSparsePsi::usage="FPickRandomSparsePsi[dim,s,tol] generates a random analytic real pure state with dimension dim and with s non-zero elements."
+(*Various helper methods*)
+PrepareForQASM::usage="PrepareForQASM[gatelist] takes a list of gates and prepares it into a form suitable for use with the python script that converts to QASM."
+RxRGateDecomp::usage="RxRGateDecomp[u] takes a single qubit unitary u and outputs (a,b,c,d) such that u is equal to Rx[a] followed by R[b,c] up to the phase E^(I*d)."
+ReplaceCNOTWithXX::usage="ReplaceCNOTWithXX[st] takes a gate list and replaces all CNOT gates with XX gates and additional single qubit rotations."
+ReplaceXXWithCNOT::usage="ReplaceXXWithCNOT[st] takes a gate list and replaces all XX gates with CNOTs and additional single qubit rotations."
+CNOTRotationsToXXRGates::usage="CNOTRotationsToXXRGates[st] takes a gate list and replaces all CNOT and single-qubit rotations by XX and R gates."
+XXRGatesToCNOTRotations::usage="XXRGatesToCNOTRotations[st] takes a gate list and replaces all XX and R gates with CNOTs and single-qubit rotations."
 NearbyIsometry::usage="NearbyIsometry[iso] uses the singular value decomposition to generate an isometry near to iso."
+PivotingDec::usage="PivotingDec[vec] returns a circuit which implements the pivoting algorithm for vec, along with the row qubits, column qubits, final column and implemented permutation of the entries of the state vector."
+
 
 Begin["`Private`"];
 
@@ -1775,6 +1789,7 @@ Switch[action,
 Null,Range[n], 
 _, action
 ];
+If[Length[Union[dia]]===1,Return[{}]];
 st=DecDiagGateRec[dia,Range[n],n];
 If[actionQ==Range[n],,st=RelabelQubits[st,Range[n],actionQ]];
 Reverse[st]
@@ -4209,6 +4224,655 @@ NearbyIsometry[iso_] := Module[{i,u,v,w},
     w[[i]][[i]] = 1];
   u.w.CT[v]
 ]
+
+(* Helper functions for applying gates to a state, potentially requiring ancillas *)
+(* TODO: make more efficient for short circuits *)
+AddAncilla[vec_] := Module[{},
+	KroneckerProduct[vec, {{1},{0}}]
+];
+RemoveAncilla[vec_] := Module[{res},
+	res = vec[[1;;;;2]];
+	Assert[Chop[(CT[res].res)[[1,1]]-1] == 0];
+	res
+];
+ApplyUnitaryWithAncillas[U_,vec_,n_] := Module[{},
+	Nest[RemoveAncilla,U.Nest[AddAncilla,vec,n],n]
+];
+ApplyGates[gates_,vec_,numeric_] := Module[{requiredQubits,stateQubits,actualQubits,U},
+	requiredQubits = Max[Array[gates[[#,3]]&,Length[gates]]];
+	stateQubits = Log2[Length[vec]];
+	actualQubits = Max[requiredQubits,stateQubits];
+	U = If[numeric,NCreateOperationFromGateList[gates,actualQubits],CreateOperationFromGateList[gates,actualQubits]];
+	ApplyUnitaryWithAncillas[U,vec,actualQubits-stateQubits]
+];
+ApplyGatesToIsometry[gates_,iso_,numeric_] := Module[{iso2,k,m},
+	iso2 = iso;
+	m = Log2[Dimensions[iso][[2]]];
+	For[k=1, k<=2^m, k++,
+		iso2[[All, k;;k]] = Chop[ApplyGates[gates, iso2[[All, k;;k]],numeric ]]
+	];
+	iso2
+];
+(* Decomposes a multi-controlled Toffoli (including X and CNOT) up to diagonal *)
+DecCXUpToDiagonal[ctrlQubits_,ctrlValue_,targetQubit_,n_] := Module[{allQubits,otherQubits,gates,k,i},
+	allQubits = Range[n];
+	Assert[SubsetQ[allQubits,ctrlQubits]];
+	Assert[MemberQ[allQubits,targetQubit]];
+	Assert[!MemberQ[ctrlQubits,targetQubit]];
+	gates = {};
+	k = Length[ctrlQubits];
+	If[k==0,Return[DecX[targetQubit]]];
+	For[i=1, i <= k, i++, 
+		If[IntegerDigits[ctrlValue,2,k][[i]] == 0, gates = Join[gates, DecX[ctrlQubits[[i]]]]]];
+	If[k==1,gates = Join[gates, {CNOT[ctrlQubits[[1]], targetQubit]}]];
+	If[k==2,gates = Join[gates, DecToffoliUpToDiagonal[ctrlQubits,targetQubit,n]]];
+	If[3<=k<=Floor[n/2], 
+		gates = Join[gates, DecToffoliMultiControlUpToDiagonal[ctrlQubits,targetQubit,n]],
+		If[3<=k<=n-2, 
+			gates = Join[gates, DecToffoliMultiControl[ctrlQubits,targetQubit,n]]],
+			Assert[False]];
+	For[i=1, i <= k, i++, 
+		If[IntegerDigits[ctrlValue,2,k][[i]] == 0, gates = Join[gates, DecX[ctrlQubits[[i]]]]]];
+	gates
+];
+
+(* Fully controlled X gate on n qubits, if n \[GreaterEqual] 3 we use qubit n+1 as ancilla *)
+DecFullyCX[n_] := Module[{gates},
+	Assert[n>=1];
+	If[n==1, gates = DecX[1]];
+	If[n==2, gates = {{0,1,2}}];
+	If[n>=3, gates = DecToffoliMultiControl[Range[n - 1], n, n + 1]];
+	gates
+];
+
+(* Given a multi-controlled Toffoli (including X and CNOT) this computes the corresponding
+permutation of the state vector elements *)
+PermutationFromToffoli[ctrlQubits_, ctrlValue_, targetQubit_, n_] := Module[{i,a,b,allQubits,otherQubits,bits,m,perm},
+	allQubits = Range[n];
+	Assert[SubsetQ[allQubits,ctrlQubits]];
+	Assert[MemberQ[allQubits,targetQubit]];
+	Assert[!MemberQ[ctrlQubits,targetQubit]];
+	otherQubits = Complement[allQubits,Join[ctrlQubits, {targetQubit}]];
+	m = Length[otherQubits];
+	perm = Cycles[{}];
+	For[i=0, i<2^m, i++,
+		bits = IntegerDigits[0,2,n];
+		bits[[otherQubits]] = IntegerDigits[i,2,m];
+		bits[[ctrlQubits]] = IntegerDigits[ctrlValue,2,n-m-1];
+		a=FromDigits[bits,2];
+		bits[[targetQubit]] = 1;
+		b=FromDigits[bits,2];
+		perm =PermutationProduct[perm,Cycles[{{a+1,b+1}}]]];
+	perm
+];
+
+ApplyPermutation[permutation_, vec_] := Permute[vec,permutation];
+RemoveAncillaGates[gates_] := Module[{}, DeleteCases[gates, x_/;x[[1]]==5] ];
+DecX[j_] := Module[{}, DecIsometry[{{0, 1}, {1, 0}},{j}] ];
+
+(* Reflection Gate R = diag(-1,1,...,1) *)
+ReflectionGate[n_] := Module[{H1,H2,gates,j},
+	H1={{yType,\[Pi]/2,n}};
+    H2={{zType,\[Pi],n},{yType,\[Pi]/2,n},{zType,\[Pi],n}};
+	gates = {};
+	gates = Join[gates, H1];
+	For[j = 1, j < n, j++, gates = Join[gates, DecX[j]] ];
+	gates = Join[gates, DecFullyCX[n]];
+	For[j = 1, j < n, j++, gates = Join[gates, DecX[j]] ];
+	gates = Join[gates, H2]
+];
+
+(* Implements the standard dense Householder reflection with respect to the given vector <vec> (as 1 column matrix) *)
+Options[DenseHouseholderReflection]={Simp->True,FullSimp->True};
+DenseHouseholderReflection[vec_,OptionsPattern[]] := Module[{gatesSP,n,m},
+	IsQubitIsometry[vec, "HouseholderReflection"];
+	{n, m} = Map[Log2, Dimensions[vec]];
+	Assert[m == 0];
+	gatesSP = RemoveAncillaGates[StatePreparation[vec,{Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}]];
+	Join[InverseGateList[gatesSP], ReflectionGate[n], gatesSP]
+];
+(* Householder vector for reducing vec to e_i using a standard Householder reflection *)
+ComputeHouseholderVector[vec_, i_] := Module[{vec2},
+	vec2=vec;
+	vec2[[i,1]] -= Exp[-I (\[Pi] - Arg[vec[[i,1]] ])];
+	Normalize[vec2, Norm]
+];
+
+(* Gives the same result as applying the gates up to global phase *)
+ApplyStandardHouseholderReflection[vec_, iso_] := Module[{},
+	Chop[iso - 2*(vec.(CT[vec].iso))]
+];
+
+Options[DenseHouseholderDec] = {Simp->True,FullSimp->True};
+DenseHouseholderDec[iso_,action_:Null,OptionsPattern[]] := Module[{V, i, m, n, vec, gates, gatesSP, vectors, k}, 
+	IsQubitIsometry[iso, "DenseHouseholderDec"];
+    If[iso == {}, Return[{}]];
+    {n, m} = Map[Log2, Dimensions[iso]];
+    V = iso;
+    
+    If[m==0,
+      gatesSP = StatePreparation[V,FullSimp->OptionValue[FullSimp]];
+      If[OptionValue[Simp],gatesSP=SimplifyGateList[gatesSP]];
+      Return[gatesSP]];
+    
+    If[m==n==1,
+      gates=DecIsometry[iso];
+      If[OptionValue[Simp],gates=SimplifyGateList[gates]];
+      Return[gates]];
+    
+	vectors = {};
+	gates = {};
+	For[i = 1, i <= 2^m, i++, 
+		vec = ComputeHouseholderVector[V[[All, i;;i]], i];
+		If[Norm[vec[[i]]]!=1,
+			V = ApplyStandardHouseholderReflection[vec,V];
+			vectors = Join[vectors, {vec}]]
+	];
+
+	If[Length[vectors]==0,
+		Return[Table[{ancillaType,0,j},{j,1,n-m}]]];
+	
+	gatesSP = StatePrepRecursive[vectors[[1]], 1,{FullUnitary->True,FullSimp->OptionValue[FullSimp]}];
+	gates = Join[gates, Reverse[InverseGateList[gatesSP]]];
+	gates = Join[gates, ReflectionGate[n]];
+	For[i = 2, i <= Length[vectors], i++, 
+		gates = Join[gates, MergedStatePreps[vectors[[i-1]],vectors[[i]]]];
+		gates = Join[gates, ReflectionGate[n]]
+	];
+	gatesSP = StatePrepRecursive[vectors[[Length[vectors]]], 1,{FullUnitary->True,FullSimp->OptionValue[FullSimp]}];
+	gates = Join[gates, Reverse[gatesSP]];
+	
+	gates = Join[gates, InverseGateList[DecDiagGate[Diagonal[V], Range[n-m+1,n]]]];
+	If[OptionValue[Simp], gates=SimplifyGateList[InverseGateList[gates]], gates=InverseGateList[gates]];
+	k = Max[Array[gates[[#,3]]&,Length[gates]]];
+	gates = Join[Table[{ancillaType,0,j},{j,Join[Range[1,n-m],Range[n+1,k]]}],gates];
+	gates = Join[gates,Table[{postselType,0,j},{j,Range[n+1,k]}]];
+	
+	gates
+];
+
+PickRandomSparsePsi[L_, S_] := Module[{nnzIndices, out, vec1},
+	Assert[0<S<=L];
+	nnzIndices = RandomSample[Range[1, L], S];
+	vec1 = PickRandomPsi[S];
+	out = SparseArray[Table[0, L, 1]];
+	out[[nnzIndices]] = vec1;
+	out
+];
+
+RPickRandomSparsePsi[L_, S_] := Module[{nnzIndices, out, vec1},
+	Assert[0<S<=L];
+	nnzIndices = RandomSample[Range[1, L], S];
+	vec1 = RPickRandomPsi[S];
+	out = SparseArray[Table[0, L, 1]];
+	out[[nnzIndices]] = vec1;
+	out
+];
+
+FPickRandomSparsePsi[L_, S_,v_] := Module[{nnzIndices, out, vec1},
+	Assert[0<S<=L];
+	nnzIndices = RandomSample[Range[1, L], S];
+	vec1 = FPickRandomPsi[S,v];
+	out = SparseArray[Table[0, L, 1]];
+	out[[nnzIndices]] = vec1;
+	out
+];
+
+SplitIndex[index_, rowQubits_, colQubits_] := Module[{rowIndex,colIndex,bits},
+	Assert[DisjointQ[rowQubits,colQubits]];
+	bits = IntegerDigits[index,2,Length[rowQubits]+Length[colQubits]];
+	rowIndex = FromDigits[bits[[rowQubits]],2];
+	colIndex = FromDigits[bits[[colQubits]],2];
+	{rowIndex, colIndex}
+];
+
+(*Terminology: "index" for 0-indexed (qubits), "position" for 1-indexed (Mathematica array)*)
+SparseVectorToTable[vec_, rowQubits_, colQubits_] := Module[{a,b,positions,index,stab},
+	Assert[Log2[Length[vec]] == Length[rowQubits]+Length[colQubits]];
+	a = Length[rowQubits];
+	b = Length[colQubits];
+	stab = SparseArray[Table[0, 2^a, 2^b]];
+	Do[
+		index = SplitIndex[pos[[1]]-1, rowQubits, colQubits];
+		stab[[ index[[1]]+1, index[[2]]+1 ]] = vec[[ pos[[1]],1 ]], 
+	{pos,vec["NonzeroPositions"]}];
+	stab
+];
+
+MostOccupiedColumn[stab_] := Module[{ncols,colsizes},
+	ncols = Dimensions[stab][[2]];
+	colsizes = Table[Length[stab[[All,i]]["NonzeroValues"]],{i,ncols}];
+	Ordering[colsizes,-1][[1]]
+];
+
+ValueOfSplitting[v_, split_] := Module[{rowQ,colQ,stab,tcol},
+	{rowQ,colQ} = split;
+	stab = SparseVectorToTable[v,rowQ,colQ];
+	tcol = MostOccupiedColumn[stab];
+	Length[stab[[All,tcol]]["NonzeroPositions"]]
+];
+ 
+FindQubitSplitting[v_] := Module[{i,s,n,bestSplit,bestValue,rand,split,value},
+	s = Ceiling[Log2[Length[v["NonzeroPositions"]]]];
+	n = Log2[Length[v]];
+	Assert[s<n];
+	bestSplit = {Range[s], Range[s+1,n]};
+	bestValue = ValueOfSplitting[v,bestSplit];
+	For[i=1,i<100,i++, (*TODO improve this*)
+		rand = RandomSample[Range[n],s];
+		split = {rand, Complement[Range[n],rand]};
+		value = ValueOfSplitting[v,split];
+		If[value > bestValue, 
+			bestSplit = split;
+			bestValue = value];
+	];
+	bestSplit
+];
+
+InsertionDistance[pos_,targetRow_,targetCol_] := Module[{x},
+	HammingDistanceInteger[pos[[1]]-1,targetRow-1] + HammingDistanceInteger[pos[[2]]-1,targetCol-1]
+];
+
+FindClosestNNZ[stab_,targetCol_] := Module[{targetRow,dist,bestPos,bestDist},
+	bestPos = {-1,-1};
+	bestDist = Infinity;
+	Do[
+		If[pos[[2]] != targetCol, 
+			targetRow = ClosestFreeRow[stab,targetCol,pos[[1]]];
+			dist = InsertionDistance[pos,targetRow,targetCol];
+			If[dist < bestDist, bestDist=dist; bestPos=pos]],
+	{pos,stab["NonzeroPositions"]} ];
+	bestPos
+];
+
+HammingDistanceInteger[i_,j_] := Module[{n}, n=Ceiling[Log2[1+Max[i,j]]];
+	HammingDistance[IntegerDigits[i,2,n], IntegerDigits[j,2,n]]
+];
+
+ClosestFreeRow[stab_,targetCol_,nnzRow_] := Module[{freeRows,distances},
+	freeRows = DeleteCases[Range[Dimensions[stab][[1]]], row_ /; stab[[row,targetCol]]!=0];
+	distances = Table[HammingDistanceInteger[i-1,nnzRow-1],{i,freeRows}];
+	freeRows[[Ordering[distances,1][[1]] ]]
+];
+
+PivotingNotDone[stab_] := Module[{colsizes,ncols},
+	ncols = Dimensions[stab][[2]];
+	If[ncols==1, Return[False]];
+	colsizes = Table[Length[stab[[All,i]]["NonzeroValues"]],{i,ncols}];
+	colsizes[[Ordering[colsizes,-2][[1]] ]] != 0
+];
+
+ApplyCNotCol[stab_, control_, ctrlValue_, target_] := Module[{colBits,colBitsFlipped,colFlipped,a,b,out,row,col},
+	{a,b} = Dimensions[stab];
+	out = SparseArray[Table[0,a,b]];
+	Do[
+		{row,col} = pos;
+		colBits = IntegerDigits[col-1,2,Log2[b]];
+		colBitsFlipped = colBits;
+		colBitsFlipped[[target]] = 1-colBits[[target]];
+		colFlipped = 1+FromDigits[colBitsFlipped,2];
+		If[colBits[[control]] == ctrlValue, 
+			out[[row,colFlipped]] = stab[[row,col]], 
+			out[[row,col]] = stab[[row,col]] ],
+		{pos,stab["NonzeroPositions"]}
+	];
+	out
+];
+
+CNotColCircuit[control_,ctrlValue_,target_,rowQ_,colQ_] := Module[{gates,ctrlQ,targetQ},
+	ctrlQ = colQ[[control]];
+	targetQ = colQ[[target]];
+	If[ctrlValue==0,
+		gates = Join[DecX[ctrlQ],{CNOT[ctrlQ,targetQ]},DecX[ctrlQ]],
+		gates = {CNOT[ctrlQ,targetQ]}];
+	gates
+];
+
+ApplyCNotRow[stab_, control_, ctrlValue_, target_] := Module[{colBits,rowBits,colBitsFlipped,rowBitsFlipped,rowFlipped,a,b,out,row,col},
+	{a,b} = Dimensions[stab];
+	out = SparseArray[Table[0,a,b]];
+	Do[
+		{row,col} = pos;
+		colBits = IntegerDigits[col-1,2,Log2[b]];
+		rowBits = IntegerDigits[row-1,2,Log2[a]];
+		rowBitsFlipped = rowBits;
+		rowBitsFlipped[[target]] = 1-rowBits[[target]];
+		rowFlipped = 1+FromDigits[rowBitsFlipped,2];
+		If[colBits[[control]] == ctrlValue, 
+			out[[rowFlipped, col]] = stab[[row, col]], 
+			out[[row, col]] = stab[[row, col]] ],
+		{pos,stab["NonzeroPositions"]}
+	];
+	out
+];
+
+CNotRowCircuit[control_,ctrlValue_,target_,rowQ_,colQ_] := Module[{gates,ctrlQ,targetQ},
+	ctrlQ = colQ[[control]];
+	targetQ = rowQ[[target]];
+	If[ctrlValue==0,
+		gates = Join[DecX[ctrlQ],{CNOT[ctrlQ,targetQ]},DecX[ctrlQ]],
+		gates = {CNOT[ctrlQ,targetQ]}];
+	gates
+];
+
+(*TODO FIX PHASES*)
+ApplyFinalToffoli[stab_, target_, ctrlRow_] := Module[{a,b,row,col,out,rowBits,colBits,colBitsFlipped,colFlipped},
+	{a,b} = Dimensions[stab];
+	out = SparseArray[Table[0,a,b]];
+	Do[
+		{row,col} = pos;
+		colBits = IntegerDigits[col-1,2,Log2[b]];
+		colBitsFlipped = colBits;
+		colBitsFlipped[[target]] = 1-colBits[[target]];
+		colFlipped= 1+FromDigits[colBitsFlipped,2];
+		If[row==ctrlRow, 
+			out[[row,colFlipped]] = stab[[row,col]], 
+			out[[row,col]] = stab[[row,col]] ],
+		{pos,stab["NonzeroPositions"]}
+	];
+	out
+];
+
+FinalToffoliCircuit[rowQ_,colQ_,controlRow_,targetQubit_] := Module[{m,n},
+	m = Length[rowQ];
+	n = Length[colQ];
+	DecCXUpToDiagonal[rowQ, controlRow-1, colQ[[targetQubit]], n + m + 1]
+];
+
+InsertNnz[stab_,rowQubits_,colQubits_,targetCol_,nnzPos_] := 
+Module[{i,n,m,stab2,nnzRow, nnzCol,targetRow,gates,firstDiff,ctrlQubit,ctrlValue,colDiffs,rowDiffs,perm},
+	m = Length[rowQubits];
+	n = Length[colQubits];
+	{nnzRow, nnzCol} = nnzPos;
+	targetRow = ClosestFreeRow[stab,targetCol,nnzRow];
+	gates = {};
+	perm = Cycles[{}];
+	ctrlQubit = FirstPosition[IntegerDigits[nnzCol-1,2,n]-IntegerDigits[targetCol-1,2,n], x_ /; x != 0][[1]];
+	ctrlValue = 1-IntegerDigits[targetCol-1,2,n][[ctrlQubit]];
+	colDiffs = Flatten[Position[IntegerDigits[nnzCol-1,2,n]-IntegerDigits[targetCol-1,2,n], x_ /; x != 0]];
+	rowDiffs = Flatten[Position[IntegerDigits[nnzRow-1,2,m]-IntegerDigits[targetRow-1,2,m], x_ /; x != 0]];
+	
+	stab2=stab;
+	Do[
+		If[ctrlQubit!=colQ,
+			stab2 = ApplyCNotCol[stab2,ctrlQubit,ctrlValue,colQ];
+			perm = PermutationProduct[perm, PermutationFromToffoli[{colQubits[[ctrlQubit]]},ctrlValue,colQubits[[colQ]],m+n]];
+			gates = Join[gates,CNotColCircuit[ctrlQubit,ctrlValue,colQ,rowQubits,colQubits]]],
+		{colQ,colDiffs}];
+	Do[
+		stab2 = ApplyCNotRow[stab2,ctrlQubit,ctrlValue,rowQ];
+		perm = PermutationProduct[perm, PermutationFromToffoli[{colQubits[[ctrlQubit]]},ctrlValue,rowQubits[[rowQ]],m+n]];
+		gates = Join[gates, CNotRowCircuit[ctrlQubit,ctrlValue,rowQ,rowQubits,colQubits]],
+		{rowQ,rowDiffs}];
+	stab2 = ApplyFinalToffoli[stab2,ctrlQubit,targetRow];
+	perm = PermutationProduct[perm, PermutationFromToffoli[rowQubits,targetRow-1,colQubits[[ctrlQubit]],m+n]];
+	gates = Join[gates, FinalToffoliCircuit[rowQubits,colQubits,targetRow,ctrlQubit]];
+	
+	{stab2,gates,perm}
+];
+
+Options[PivotingDec] = {TrivialSplitting -> False};
+PivotingDec[vec_, OptionsPattern[]] := Module[{n,s,i,a,b,rowQubits,colQubits,stab,tcol,nnz,gates,insertGates,gates2,perm,insertPerm},
+	If[OptionValue["TrivialSplitting"],
+		s = Ceiling[Log2[Length[vec["NonzeroPositions"]]]];
+		n = Log2[Length[vec]];
+		{rowQubits,colQubits} = {Range[n-s+1,n], Range[n-s]},
+		{rowQubits,colQubits} = FindQubitSplitting[vec]];
+	stab = SparseVectorToTable[vec,rowQubits,colQubits];
+	tcol = MostOccupiedColumn[stab];
+	gates = {};
+	perm = Cycles[{}];
+	While[PivotingNotDone[stab],
+		nnz = FindClosestNNZ[stab,tcol];
+		{stab,insertGates,insertPerm} = InsertNnz[stab,rowQubits,colQubits,tcol,nnz];
+		gates = Join[gates,insertGates];
+		perm = PermutationProduct[perm, insertPerm]
+	];
+	
+	a=Length[rowQubits];
+	b=Length[colQubits];
+	For[i=1,i<=b,i++, 
+		If[IntegerDigits[tcol-1,2,b][[i]]==1, 
+			gates = Join[gates, DecX[colQubits[[i]]]];
+			perm = PermutationProduct[perm, PermutationFromToffoli[{},0,colQubits[[i]],a+b]]]];
+	{gates,rowQubits,colQubits,stab[[All,tcol;;tcol]],perm}
+];
+
+Options[SparseReverseStatePreparation] = {Simp->True,FullSimp->True};
+SparseReverseStatePreparation[vec_,OptionsPattern[]] := Module[{w,gatesPiv, rowQubits,colQubits,tcol,stab,reducedVec,gatesSP,gatesX,perm,numeric},
+	{gatesPiv,rowQubits,colQubits,reducedVec,perm} = PivotingDec[vec];
+	numeric=Not[Tr[Map[Not,Map[MachineNumberQ,Flatten[vec]]],And]];
+	w = ApplyGates[gatesPiv,vec,numeric];
+	stab = SparseVectorToTable[SparseArray[w],rowQubits,colQubits];
+	reducedVec = Transpose[{Normal[stab[[;;,1]]]}];
+	
+	gatesSP = RemoveAncillaGates[StatePreparation[reducedVec,{Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}]];
+	gatesSP = RelabelQubits[gatesSP, Range[Length[rowQubits]], rowQubits];
+	gatesSP = InverseGateList[gatesSP];
+	
+	{gatesPiv,gatesSP,perm}
+];
+
+Options[SparseStatePreparation] = {Simp->True,FullSimp->True};
+SparseStatePreparation[vec_,action_:Null,OptionsPattern[]] := Module[{gates,gatesPiv,gatesSP,gatesAncilla,perm,k,n,actionQ}, 
+	{gatesPiv,gatesSP,perm} = SparseReverseStatePreparation[SparseArray[vec],{Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}];
+	n = Log2[Length[vec]];
+	gates = Join[gatesPiv,gatesSP];
+	gates=InverseGateList[gates];If[OptionValue[Simp],gates=SimplifyGateList[gates]];
+	k = Max[0,Max[Array[gates[[#,3]]&,Length[gates]]]];
+	gatesAncilla={};
+	gatesAncilla=Join[gatesAncilla, Table[{postselType,0,j},{j,n+1,k}]];
+	gatesAncilla=Join[gatesAncilla, Table[{ancillaType,0,j},{j,1,n}]];
+	gatesAncilla=Join[gatesAncilla, Table[{ancillaType,0,j},{j,n+1,k}]];
+	gates=Join[gatesAncilla,gates];
+	actionQ=
+Switch[action, 
+Null,Range[n], 
+_, action
+];
+If[actionQ==Range[n],,gates=RelabelQubits[gates,Range[n],actionQ]];
+gates]
+
+(* Up to permutation *)
+Options[SparseHouseholderReflection] = {Simp->True,FullSimp->True};
+SparseHouseholderReflection[vec_,OptionsPattern[]] := Module[{gates,gatesSP,m,n,a,b,p},
+	IsQubitIsometry[vec, "HouseholderReflection"];
+	{m, n} = Map[Log2, Reverse[Dimensions[vec]]];
+	{a,b,p} = SparseReverseStatePreparation[vec,{Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}];
+	gates = Join[a,b,ReflectionGate[n],InverseGateList[b]];
+	gates
+];
+
+Options[HouseholderReflection] = {Simp->True,FullSimp->True};
+HouseholderReflection[vec_,dense_,OptionsPattern[]] := Module[{gatesDense,gatesSparse,n,s},
+	s = Ceiling[Log2[Length[vec["NonzeroPositions"]]]];
+	n = Log2[Length[vec]];
+	If[dense == False && s<n,
+		gatesSparse = SparseHouseholderReflection[vec,{Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}];
+		gatesDense = DenseHouseholderReflection[Normal[vec],{Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}];
+		If[CNOTCount[gatesDense] < CNOTCount[gatesSparse],
+			Return[{gatesDense,True}],
+			Return[{gatesSparse,False}]]
+	];
+	gatesDense = DenseHouseholderReflection[Normal[vec],{Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}];
+	{gatesDense,dense}
+];
+
+(* Given a sparse isometry (sparse array), find a good elimination strategy *)
+ReducedColumns[iso_] := Module[{ncols, colsizes},
+   	ncols = Dimensions[iso][[2]];
+   	colsizes = Table[Length[iso[[All, i]]["NonzeroValues"]], {i, ncols}];
+   	Flatten[Position[colsizes, 1]]
+   ];
+
+ReducedRows[iso_] := Module[{},
+   	Table[iso[[All, col]]["NonzeroPositions"][[1, 1]], {col, ReducedColumns[iso]}]
+   ];
+
+SparsestNonReducedColumns[iso_] := Module[{ncols, colsizes},
+   	ncols = Dimensions[iso][[2]];
+   	colsizes = Table[Length[iso[[All, i]]["NonzeroValues"]], {i, ncols}];
+   	colsizes[[ReducedColumns[iso]]] = Infinity;
+   	Flatten[Position[colsizes, Min[colsizes], 1]]
+   ];
+
+SparsestNonReducedRows[iso_] := Module[{nrows, rowsizes},
+   	nrows = Dimensions[iso][[1]];
+   	rowsizes = Table[Length[iso[[i, All]]["NonzeroValues"]], {i, nrows}];
+   	rowsizes[[ReducedRows[iso]]] = Infinity;
+   	Flatten[Position[rowsizes, Min[rowsizes], 1]]
+   ];
+
+NextReduction[iso_] := Module[{},
+  	{SparsestNonReducedRows[iso][[1]], SparsestNonReducedColumns[iso][[1]]}
+  ];
+
+IsNotPermutedDiagonal[iso_] := Module[{ncols, colsizes},
+  	ncols = Dimensions[iso][[2]];
+  	colsizes = Table[Length[iso[[All, i]]["NonzeroValues"]], {i, ncols}];
+  	Max[colsizes] != 1
+  ];
+  
+Options[SparseHouseholderDec] = {Simp->True,FullSimp->True};
+SparseHouseholderDec[iso_,action_:Null,OptionsPattern[]] := Module[{V,i,j,m,n,k,dim,vec,oldvec,gates,gatesSP,st,dense,gatesSparse,gatesDense,actionQ,numeric}, 
+	dense = False;
+	numeric=Not[Tr[Map[Not,Map[MachineNumberQ,Flatten[iso]]],And]];
+	(*IsQubitIsometry[v, "SparseHouseholderDec"];*)
+    If[iso == {}, Return[{}]];
+    {n, m} = Map[Log2, Dimensions[iso]];
+    V = SparseArray[Chop[iso]];
+	gates = {};
+	
+	If[m==0,Return[SparseStatePreparation[V,action,{Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}]]];
+  	
+	While[IsNotPermutedDiagonal[V],
+ 		{i, j} = NextReduction[V];
+ 		vec = ComputeHouseholderVector[V[[All, j ;; j]], i];
+ 		gatesSparse = SparseHouseholderReflection[SparseArray[Chop[vec]],{Simp->OptionValue[Simp],FullSimp->OptionValue[FullSimp]}];
+ 		(*gatesDense = DenseHouseholderReflection[Normal[vec]];
+ 		If[CNOTCount[gatesDense] < CNOTCount[gatesSparse], Break[]];*)
+ 		gates = Join[gates, gatesSparse];
+ 		V = ApplyGatesToIsometry[gatesSparse, V,numeric]
+ 	];
+  	
+	If[IsNotPermutedDiagonal[V] == False,
+		gates=Join[DecPermutedDiagonalIsometry[V,numeric], InverseGateList[gates]];
+		
+		If[OptionValue[Simp],gates=SimplifyGateList[gates]];
+		If[Length[gates]>0,
+			k = Max[Array[gates[[#,3]]&,Length[gates]]];
+			gates = Join[Table[{ancillaType,0,j},{j,Range[n+1,k]}],gates];
+			gates = Join[gates,Table[{postselType,0,j},{j,Range[n+1,k]}]]];
+		gates = Join[Table[{ancillaType,0,j},{j,Range[1,n-m]}],gates];
+		
+		actionQ=
+Switch[action, 
+Null,Range[n], 
+_, action
+];
+If[actionQ==Range[n],,st=RelabelQubits[st,Range[n],actionQ]];
+		Return[gates]]
+  	
+	(*oldvec = Normal[vec];
+	gates = Join[gates, Reverse[InverseGateList[StatePrepRecursive[oldvec, 1, FullUnitary -> True]]]];
+	gates = Join[gates, ReflectionGate[n]];
+	While[IsNotPermutedDiagonal[V], 
+		V = SparseArray[Chop[ApplyStandardHouseholderReflection[oldvec, V]]];
+		{i, j} = NextReduction[V];
+		vec = Normal[ComputeHouseholderVector[V[[All, j ;; j]], i]];
+		gates = Join[gates, MergedStatePreps[oldvec, vec]];
+		gates = Join[gates, ReflectionGate[n]];
+		oldvec = vec;
+	];
+    gates = Join[gates, Reverse[StatePrepRecursive[oldvec, 1, FullUnitary -> True]]];
+	gates = Join[DecPermutedDiagonalIsometry[SparseArray[V],numeric], InverseGateList[gates]];
+	If[OptionValue[Simp],gates=SimplifyGateList[gates]];
+	gates*)
+];
+
+DecBitonicSort[i_, j_, listIn_,numeric_] := Module[{a,b,n,d,k,up,gates,list},
+	list = listIn;
+	d = BitShiftLeft[1, i - j];
+	n = Log2[Length[list]];
+	
+	If[n==1,
+		If[list[[1]]<list[[2]],
+			Return[{{},list}], 
+			Return[{DecX[1],Reverse[list]}]]
+	];
+	
+	gates = {};
+	For[k = 0, k < 2^n, k++,
+    	up = (BitAnd[BitShiftRight[k, i], 2] == 0);
+    	a = k + 1;
+    	b = BitOr[k, d] + 1;
+		If[BitAnd[k, d] == 0,
+			If[(list[[a]] > list[[b]]) == up,
+				list[[{a,b}]] = list[[{b,a}]];
+				gates = Join[gates,If[numeric,N[{{{0,1},{1,0}}}],{{{0,1},{1,0}}}]],
+				gates = Join[gates,If[numeric,N[{{{1,0},{0,1}}}],{{{1,0},{0,1}}}]]]
+		]
+    ];
+   {DecUCGUpToDiagonal[gates, SetMinus[Range[n], {n-i+j}], n-i+j, n], list}
+];
+
+(* Input: column permutation of a diagonal isometry
+   Output: permutation on m qubits up to diagonal *)
+DecPermutationUpToDiagonal[iso_,numeric_] := Module[{i, j, n, m, list, gates, bitonicGates},
+	{n, m} = Map[Log2, Dimensions[iso]];
+	list = Table[iso[[All, k]]["NonzeroPositions"][[1, 1]], {k, 1, 2^m}];
+	If[list==Sort[list],Return[{}]];
+	gates = {};
+	For[i = 0, i < m, i++,
+		For[j = 0, j <= i, j++,
+			{bitonicGates, list} = DecBitonicSort[i, j, list,numeric];
+			gates = Join[gates, bitonicGates];
+		]
+	];
+	gates
+];
+
+DecPermutedDiagonalIsometry[V_,numeric_] := Module[{iso, vec, n, m, gates, gatesPerm, gatesDiag, gatesDiag2},
+	iso = V;
+	{n, m} = Map[Log2, Dimensions[iso]];
+	vec = SparseArray[iso.Table[{1}, 2^m]];
+	gates = PivotingDec[vec,TrivialSplitting->True][[1]];
+	iso = ApplyGatesToIsometry[gates,iso,numeric];
+	
+	gatesPerm = RelabelQubits[InverseGateList[DecPermutationUpToDiagonal[iso,numeric]],Range[m],Range[m]+n-m];
+	iso = ApplyGatesToIsometry[gatesPerm,iso,numeric];
+	gates = Join[gates, gatesPerm];
+
+	gatesDiag = RelabelQubits[InverseGateList[ {Diag[Normal[Diagonal[iso]],Range[m]]}],Range[m],Range[m]+n-m];
+	gatesDiag2 = InverseGateList[ DecDiagGate[Normal[Diagonal[iso]],Range[m]+n-m] ];
+	iso = ApplyGatesToIsometry[gatesDiag,iso,numeric];
+	gates = Join[gates,gatesDiag2];
+	
+	InverseGateList[gates]
+];
+
+PickRandomEnvelope[dim1_,dim2_]:=Module[{out={},col,i,j,n=1,blanks=0,env={},dig,digs={}},dig=RandomInteger[];digs=Insert[digs,dig,-1];For[i=1,i<=dim1,i++,col=Flatten[{Table[0,{x,1,blanks}],Table[1,{x,1,If[env==={},i,Max[env[[-1]]-1,i]]-blanks}]}];j=If[env==={},i+1,Max[env[[-1]],i+1]];(*If[j>dim2,j=dim2];*)
+If[dig==0&&j==i+1,blanks=i];While[dig!=0&&j<=dim2,col=Insert[col,dig,-1];j++;dig=RandomInteger[];digs=Insert[digs,dig,-1]];If[j<=dim2&&dig==0,dig=RandomInteger[];digs=Insert[digs,dig,-1]];env=Insert[env,j,-1];col=PadRight[col,dim2];out=Insert[out,col,-1]];{env,Transpose[out],Drop[digs,-1]}]
+
+Options[PickRandomSparseIsometry]={permute->True};
+PickRandomSparseIsometry[dim1_,dim2_,env2:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{i,j,vec,out={},count=0,countmax=100,env},
+If[env2===Null,env=PickRandomEnvelope[dim1,dim2][[1]],env=env2];
+While[count<=countmax&&(out==={}||Chop[CT[out].out-IdentityMatrix[dim1]]!=0*IdentityMatrix[dim1]),out={};
+For[i=1,i<=dim1,i++,vec=Transpose[{PadRight[Flatten[PickRandomPsi[env[[i]]-1]],dim2]}];
+For[j=1,j<i,j++,vec=vec-Tr[CT[out[[j]]].vec]*out[[j]]];If[Chop[Tr[CT[vec].vec]]==0,count++,vec=vec/(Tr[CT[vec].vec])^(1/2)];
+out=Insert[out,vec,-1]];If[out==={},,out=Transpose[Map[Flatten[#]&,out]]]];
+If[count==1+countmax,Print["PickRandomSparseIsometry: Unable to find isometry for given envelope"]];
+If[OptionValue[permute],out=Permute[Transpose[Permute[Transpose[out],RandomPermutation[dim1]]],RandomPermutation[dim2]]];out]
+
+Options[RPickRandomSparseIsometry]={permute->True};
+RPickRandomSparseIsometry[dim1_,dim2_,env2:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{i,j,vec,out={},count=0,countmax=100,env},
+If[env2===Null,env=PickRandomEnvelope[dim1,dim2][[1]],env=env2];
+While[count<=countmax&&(out==={}||Chop[CT[out].out-IdentityMatrix[dim1]]!=0*IdentityMatrix[dim1]),out={};
+For[i=1,i<=dim1,i++,vec=Transpose[{PadRight[Flatten[RPickRandomPsi[env[[i]]-1]],dim2]}];
+For[j=1,j<i,j++,vec=vec-Tr[CT[out[[j]]].vec]*out[[j]]];If[Chop[Tr[CT[vec].vec]]==0,count++,vec=vec/(Tr[CT[vec].vec])^(1/2)];
+out=Insert[out,vec,-1]];If[out==={},,out=Transpose[Map[Flatten[#]&,out]]]];
+If[count==1+countmax,Print["PickRandomSparseIsometry: Unable to find isometry for given envelope"]];
+If[OptionValue[permute],out=Permute[Transpose[Permute[Transpose[out],RandomPermutation[dim1]]],RandomPermutation[dim2]]];out]
 
 
    
