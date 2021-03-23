@@ -230,8 +230,8 @@ MatrixFormOp[m_]:=If[Length[Dimensions[m]]<=2,If[m=={},{},MatrixForm[m]],MatrixF
 Options[CreatePOVMFromGateList]={DropZero->"Last"};
 CreatePOVMFromGateList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{mat,i},
 IsListForm[st,"CreatePOVMFromGateList"];
-If[OptionValue[DropZero]==="None",mat=CreateChannelFromList[DeleteCases[st,{measType,0,_}],n,{POVM->True,DropZero->False}];Map[CT[#].#&,mat],
-If[OptionValue[DropZero]==="All",mat=CreateChannelFromList[DeleteCases[st,{measType,0,_}],n,{POVM->True,DropZero->True}];Map[CT[#].#&,mat],
+If[OptionValue[DropZero]==="None",mat=CreateChannelFromList[DeleteCases[st,{measType,0,_}],n,{POVM->True,DropZero->False}];Map[CT[#] . #&,mat],
+If[OptionValue[DropZero]==="All",mat=CreateChannelFromList[DeleteCases[st,{measType,0,_}],n,{POVM->True,DropZero->True}];Map[CT[#] . #&,mat],
 If[OptionValue[DropZero]==="Last",mat=CreatePOVMFromGateList[st,n,DropZero->"None"];
 For[i=Length[mat],i>=1,i--,If[Chop[mat[[i]]]==0*mat[[i]],mat=Drop[mat,-1],Break[]]];mat,Throw[StringForm["Unknown option for DropZero in CreatePOVMFromGateList. Valid options are None, All or Last"]]]]
 ]]
@@ -382,12 +382,12 @@ isAnalytic=True;
 For[i=1,i<=Length[st2],i++,
 If[isAnalyticGate[st2[[i]]],,isAnalytic=False];
 If[isAnalytic,
-If[OptionValue[FullSimp],mat=FullSimplifyNoRoots[ListFormToOp[st2[[i]],n1].mat],mat=Simplify[ListFormToOp[st2[[i]],n1].mat],Print["CreateIsometryFromList: Error"]],
-mat=ListFormToOp[st2[[i]],n1].mat
+If[OptionValue[FullSimp],mat=FullSimplifyNoRoots[ListFormToOp[st2[[i]],n1] . mat],mat=Simplify[ListFormToOp[st2[[i]],n1] . mat],Print["CreateIsometryFromList: Error"]],
+mat=ListFormToOp[st2[[i]],n1] . mat
 ]
 ];
 If[ancillaoutnums=={},mat,mat2={{1}};k=0;For[i=1,i<=n1,i++,(* usually ancillaoutvals will be all 1s, so create ket 0, sometimes (for instrument generation) we want to create ket 1 *)mat2=KroneckerProduct[mat2,If[MemberQ[ancillaoutnums,i],k++;KetV[ancillaoutvals[[k]],2],IdentityMatrix[2]]]];
-CT[mat2].mat]]
+CT[mat2] . mat]]
 
 (*Create an n qubit isometry from list form. Multiplies the unitaries described in the list (numerically) and outputs the first m columns*)
 NCreateIsometryFromList[st_,n_:Null]:=CreateIsometryFromList[NGateList[st],n]
@@ -396,7 +396,7 @@ Options[CreateChannelFromList]={POVM->False,DropZero->True,FullSimp->True};
 CreateChannelFromList[st_,n:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{mat,i,traces,tracesnums,postsel,postselnums,posn,chanout,st2,dims,n1=n},If[Not[OptionValue[POVM]]&&MemberQ[st,{measType,1,_}],Print["CreateChannelFromList: measurement gate type found"]];
 If[n===Null,n1=NumberOfQubits[st]];traces=Cases[st,{measType,_,_}];If[traces==={},tracesnums={},tracesnums=Transpose[traces][[3]]];postsel=Cases[st,{postselType,_,_}];If[postsel==={},postselnums={},postselnums=Transpose[postsel][[3]]];If[Dimensions[Intersection[tracesnums,postselnums]]=={0},,Print["CreateChannelFromList: Cannot postselect on zero and measure/trace on the same qubit."]];st2=DeleteCases[st,{measType,_,_}];
 mat=CreateIsometryFromList[st2,n1,FullSimp->OptionValue[FullSimp]];
-chanout={};posn={};dims={};For[i=1,i<=n1,i++,If[MemberQ[postselnums,i],,If[MemberQ[tracesnums,i],posn=Insert[posn,1,-1];dims=Insert[dims,{1,2},-1],posn=Insert[posn,2,-1];dims=Insert[dims,{2,2},-1]]]];For[i=0,i<=2^(Length[tracesnums])-1,i++,chanout=Insert[chanout,Tensor[BraV[i,2^(Length[tracesnums])],IdentityMatrix[2^(n1-Length[postselnums]-Length[tracesnums])],posn,dims].mat,-1]];
+chanout={};posn={};dims={};For[i=1,i<=n1,i++,If[MemberQ[postselnums,i],,If[MemberQ[tracesnums,i],posn=Insert[posn,1,-1];dims=Insert[dims,{1,2},-1],posn=Insert[posn,2,-1];dims=Insert[dims,{2,2},-1]]]];For[i=0,i<=2^(Length[tracesnums])-1,i++,chanout=Insert[chanout,Tensor[BraV[i,2^(Length[tracesnums])],IdentityMatrix[2^(n1-Length[postselnums]-Length[tracesnums])],posn,dims] . mat,-1]];
 If[OptionValue[DropZero],For[i=Length[chanout],i>=1,i--,If[Chop[chanout[[i]]]==0*chanout[[i]],chanout=Drop[chanout,{i}]]]];chanout]
 
 Options[NCreateChannelFromList]={POVM->False,DropZero->True};
@@ -783,7 +783,7 @@ Do[
 ind1=FromDigits[Insert[index,0,target],2]+1;
 ind2=FromDigits[Insert[index,1,target],2]+1;
 For[j=1,j<=colNum,j++,
-{{mat2[[ind1]][[j]]},{mat2[[ind2]][[j]]}}=gate.{{mat[[ind1]][[j]]},{mat[[ind2]][[j]]}};
+{{mat2[[ind1]][[j]]},{mat2[[ind2]][[j]]}}=gate . {{mat[[ind1]][[j]]},{mat[[ind2]][[j]]}};
 ];
 ,{index,binaryInd}];
 mat2
@@ -806,7 +806,7 @@ mat2=ConstantArray[0,Dimensions[mat]];(*ToDo: Improve efficiency by not copying 
 Do[
 i=Floor[j/spacing]*spacing+j;
 gateIndex=FromDigits[IntegerDigits[i,2,bits][[control]],2]+1;
-{mat2[[i+1]],mat2[[i+1+spacing]]}=gates[[gateIndex]].{mat[[i+1]],mat[[i+1+spacing]]};
+{mat2[[i+1]],mat2[[i+1+spacing]]}=gates[[gateIndex]] . {mat[[i+1]],mat[[i+1+spacing]]};
 ,{j,0,2^(bits-1)-1}];
 mat2
 )]
@@ -1147,28 +1147,28 @@ CSD[u_,OptionsPattern[]]:=Module[{dim, u11, u12, u21, u22, v1, c, w1, v2, w2, r,
   {v1, c, w1} = ReorderedSVD[u11,OptionValue[FullSimp]];
   If[analyzeAnalyticQSD,Print["Finished running ReorderedSVD in CSD with output: ",{v1, c, w1}]];
  If[OptionValue[FullSimp],w1=CTSimplify[w1],w1=CT[w1]];
- If[analyzeAnalyticQSD,Print["Call QLDecompositionPos in CSD with input FullSimplifyNoRoots[u21.CTSimplify[w1]]=",FullSimplifyNoRoots[u21.CTSimplify[w1]]]];
- {v2,l}=QLDecompositionPos[If[OptionValue[FullSimp],FullSimplifyNoRoots[u21.CTSimplify[w1]],Simplify[u21.CT[w1]]],OptionValue[FullSimp]]; 
+ If[analyzeAnalyticQSD,Print["Call QLDecompositionPos in CSD with input FullSimplifyNoRoots[u21.CTSimplify[w1]]=",FullSimplifyNoRoots[u21 . CTSimplify[w1]]]];
+ {v2,l}=QLDecompositionPos[If[OptionValue[FullSimp],FullSimplifyNoRoots[u21 . CTSimplify[w1]],Simplify[u21 . CT[w1]]],OptionValue[FullSimp]]; 
   If[analyzeAnalyticQSD,Print["Finished running LDecompositionPos in CSD with output: ",{v2, l}]];
  v2 = CTSimplify[v2]; 
- If[analyzeAnalyticQSD,Print["Call  RQDecompositionNeg in CSD with input FullSimplifyNoRoots[CTSimplify[v1].u12=",FullSimplifyNoRoots[CTSimplify[v1].u12]]];
+ If[analyzeAnalyticQSD,Print["Call  RQDecompositionNeg in CSD with input FullSimplifyNoRoots[CTSimplify[v1].u12=",FullSimplifyNoRoots[CTSimplify[v1] . u12]]];
  {r, w2} = 
-  RQDecompositionNeg[If[OptionValue[FullSimp],FullSimplifyNoRoots[CTSimplify[v1].u12],Simplify[CT[v1].u12]],OptionValue[FullSimp]]; 
+  RQDecompositionNeg[If[OptionValue[FullSimp],FullSimplifyNoRoots[CTSimplify[v1] . u12],Simplify[CT[v1] . u12]],OptionValue[FullSimp]]; 
    If[analyzeAnalyticQSD,Print["Finished running RQDecompositionNeg in CSD with output: ",{r, w2}]];
  If[OptionValue[FullSimp],w2=CTSimplify[w2],w2=CT[w2]];
 (* The next part makes necessary adjustments if any of the singular values are equal to1 *)
  posns = Flatten[Position[Chop[N[Diagonal[c] - 1]], 0, {1}]]; 
  dimpos = Dimensions[posns][[1]]; 
- If[dimpos > 0, If[OptionValue[FullSimp],m=Take[CTSimplify[v2].u22.CTSimplify[w2],dimpos,dimpos],m=Take[CT[v2].u22.CT[w2],dimpos,dimpos]]; 
+ If[dimpos > 0, If[OptionValue[FullSimp],m=Take[CTSimplify[v2] . u22 . CTSimplify[w2],dimpos,dimpos],m=Take[CT[v2] . u22 . CT[w2],dimpos,dimpos]]; 
   If[m != IdentityMatrix[dimpos], 
    If[dim/2 - dimpos != 0, 
-    v2 = v2.DirectSum[m, IdentityMatrix[dim/2 - dimpos]], 
-    v2 = v2.m]]]; {ArrayFlatten[{{v1, 0*v1}, {0*v1, v2}}], 
+    v2 = v2 . DirectSum[m, IdentityMatrix[dim/2 - dimpos]], 
+    v2 = v2 . m]]]; {ArrayFlatten[{{v1, 0*v1}, {0*v1, v2}}], 
   ArrayFlatten[{{c, -l}, {l, c}}], 
   ArrayFlatten[{{w1, 0*w1}, {0*w1, w2}}]}]
   
   (* Finds the QL and RQ decompositions of square matrices, i.e., M = CT[Q].L or M = R.CT[Q] with Q unitary, L left triangular, R right triangular *)
-RQDecomposition[M_]:=Module[{Q,R},{Q,R}=QRDecomp[CT[Reverse[M]]];{M.CT[Reverse[Q]],CT[Reverse[Q]]}]
+RQDecomposition[M_]:=Module[{Q,R},{Q,R}=QRDecomp[CT[Reverse[M]]];{M . CT[Reverse[Q]],CT[Reverse[Q]]}]
 QLDecomposition[M_]:=Module[{Q,R},{R,Q}=RQDecomposition[CT[M]];{CT[Q],CT[R]}]
 
 (*
@@ -1223,17 +1223,17 @@ IsQubitIsometry[u,"KronFactorUnitaryDim4"];
 p[0]=IdentityMatrix[2];p[1]={{0,1},{1,0}};p[2]={{0,I},{-I,0}};p[3]={{1,0},{0,-1}};
 max=0;imax=0;
 For[i=0,i<=3,i++,
-a=Tr[Abs[Flatten[PartialTrace[KroneckerProduct[IdentityMatrix[2],p[i]].N[u],2,2,2]]]];
+a=Tr[Abs[Flatten[PartialTrace[KroneckerProduct[IdentityMatrix[2],p[i]] . N[u],2,2,2]]]];
 If[a>max,max=a;imax=i]];
 If[max==0,Print["Error in KronFactorUnitaryDim4: the variable 'max' cannot be equal to zero."]];
 (* There is a special case if u=u1\[CircleTimes]u2 with Tr[u2]=0.  In this case we rotate u2 using
 a Pauli matrix. Choosing the Pauli matrix can safely be done numerically *)
-If[OptionValue[FullSimp],a=FullSimplifyNoRoots[PartialTrace[KroneckerProduct[IdentityMatrix[2],p[imax]].u,2,2,2]];
-c=FullSimplifyNoRoots[((a.CTSimplify[a])[[1,1]])^(1/2)];a=FullSimplifyNoRoots[a/c];
-b=p[imax].SimplifyTrigo[PartialTrace[KroneckerProduct[CTSimplify[a],p[imax]].u,2,2,1]/2];,
-a=Simplify[PartialTrace[KroneckerProduct[IdentityMatrix[2],p[imax]].u,2,2,2]];
-c=Simplify[((a.CT[a])[[1,1]])^(1/2)];a=Simplify[a/c];
-b=p[imax].Simplify[PartialTrace[KroneckerProduct[CT[a],p[imax]].u,2,2,1]/2]];
+If[OptionValue[FullSimp],a=FullSimplifyNoRoots[PartialTrace[KroneckerProduct[IdentityMatrix[2],p[imax]] . u,2,2,2]];
+c=FullSimplifyNoRoots[((a . CTSimplify[a])[[1,1]])^(1/2)];a=FullSimplifyNoRoots[a/c];
+b=p[imax] . SimplifyTrigo[PartialTrace[KroneckerProduct[CTSimplify[a],p[imax]] . u,2,2,1]/2];,
+a=Simplify[PartialTrace[KroneckerProduct[IdentityMatrix[2],p[imax]] . u,2,2,2]];
+c=Simplify[((a . CT[a])[[1,1]])^(1/2)];a=Simplify[a/c];
+b=p[imax] . Simplify[PartialTrace[KroneckerProduct[CT[a],p[imax]] . u,2,2,1]/2]];
 If[analyzeAnalyticDecUnitary2Qubits,
 Print["Matrix a in KronFactorUnitaryDim4: ",a];
 Print["Matrix b in KronFactorUnitaryDim4: ",b]
@@ -1294,31 +1294,31 @@ u=Exp[ia]*Rz[b].Ry[c].Rz[d]
 XYXDecomposition[u_] :=
 Module[{basisTrans,uPrime}, (
 basisTrans=RotGate[-Pi/2,yType];
-uPrime=Simplify[ConjugateTranspose[basisTrans].u.basisTrans];
+uPrime=Simplify[ConjugateTranspose[basisTrans] . u . basisTrans];
 ZYZDecomposition[uPrime]
 )]
 
 ZXZDecomposition[u_] := Module[{basisTrans,uPrime}, (
   basisTrans=RotGate[Pi/2,zType];
-  uPrime=Simplify[ConjugateTranspose[basisTrans].u.basisTrans];
+  uPrime=Simplify[ConjugateTranspose[basisTrans] . u . basisTrans];
   ZYZDecomposition[uPrime]
 )]
 
 XZXDecomposition[u_] := Module[{basisTrans,uPrime}, (
   basisTrans=RotGate[-Pi/2,xType];
-  uPrime=Simplify[ConjugateTranspose[basisTrans].u.basisTrans];
+  uPrime=Simplify[ConjugateTranspose[basisTrans] . u . basisTrans];
   XYXDecomposition[uPrime]
 )]
 
 YXYDecomposition[u_] := Module[{basisTrans,uPrime}, (
   basisTrans=RotGate[Pi/2,xType];
-  uPrime=Simplify[ConjugateTranspose[basisTrans].u.basisTrans];
+  uPrime=Simplify[ConjugateTranspose[basisTrans] . u . basisTrans];
   ZXZDecomposition[uPrime]
 )]
 
 YZYDecomposition[u_] := Module[{basisTrans,uPrime}, (
   basisTrans=RotGate[-Pi/2,zType];
-  uPrime=Simplify[ConjugateTranspose[basisTrans].u.basisTrans];
+  uPrime=Simplify[ConjugateTranspose[basisTrans] . u . basisTrans];
   XZXDecomposition[uPrime]
 )]
 
@@ -1554,12 +1554,12 @@ DemultiplexUC[u0_,u1_,OptionsPattern[]]:=
 Module[{v,d,w,block,dim},(
 IsQubitIsometry[u0,"DemultiplexUC"];
 IsQubitIsometry[u1,"DemultiplexUC"];
-If[analyzeAnalyticQSD,Print["Call EigensystemExact in DemultiplexUC with input: ",FullSimplifyNoRoots[u0.CTSimplify[u1]]]];
-{d,v}=EigensystemExact[If[OptionValue[FullSimp],FullSimplifyNoRoots[u0.CTSimplify[u1]],Simplify[u0.CT[u1]]]];
+If[analyzeAnalyticQSD,Print["Call EigensystemExact in DemultiplexUC with input: ",FullSimplifyNoRoots[u0 . CTSimplify[u1]]]];
+{d,v}=EigensystemExact[If[OptionValue[FullSimp],FullSimplifyNoRoots[u0 . CTSimplify[u1]],Simplify[u0 . CT[u1]]]];
 If[analyzeAnalyticQSD,Print["Finished running EigensystemExact in DemultiplexUC with output: ",{d,v}]];
 v=Transpose[v]; (*output of eigensystem gives the eigenvectors as rows*)
 d=Sqrt[d];
-w=d*CT[v].u1;
+w=d*CT[v] . u1;
 {w,d,v}
 )]
 
@@ -1599,7 +1599,7 @@ st=Drop[st,1];
 (*Take elements until we run into a CNOT or CZ with target or control on a gate that is not one of the two least significant qubits*)
 leastSignificantQubitsGatesIndices=ExtractTwoQubitGatesIndices[st,bits-1,bits];
 stLSQI=If[OptionValue[FullSimp],FullSimplifyNoRoots[RelabelQubits[st[[leastSignificantQubitsGatesIndices]],{bits-1,bits},{1,2}]],Simplify[RelabelQubits[st[[leastSignificantQubitsGatesIndices]],{bits-1,bits},{1,2}]]]; (*Relabel qubits to create matrix representation on a susystem (of all the considered qubits)*)
-twoQubitGate=diag.CreateIsometryFromList[Reverse[stLSQI],2]; 
+twoQubitGate=diag . CreateIsometryFromList[Reverse[stLSQI],2]; 
 If[analyzeAnalyticQSD,Print["Call DecUnitary2Qubits in QSD with input twoQubitGate= ",twoQubitGate]];
 twoQubitSt=Reverse[DecUnitary2Qubits[twoQubitGate,{1,2},{UpToDiagonal->False,Simp->OptionValue[Simp]}]];
 If[analyzeAnalyticQSD,Print["Finished running DecUnitary2Qubits in QSD."]];
@@ -1663,8 +1663,8 @@ If[analyzeAnalyticQSD,Print["Call CSD in CSDecRec with input a= ",a]];
 {m1,m2,m3}=CSD[a,FullSimp->FullSim];
 If[analyzeAnalyticQSD,Print["Finished running CSD in CSDecRec ."]];
 If[debug,
-If[isZeroMatrix[m1.m2.m3-a],,Print["Debugging error in CSDecRec: CSD failed on input u= ",a]];
-If[isIdentity[m1.ConjugateTranspose[m1]]&&isIdentity[m2.ConjugateTranspose[m2]]&&isIdentity[m3.ConjugateTranspose[m3]],,Print["Error in CSDecRec: CSD outputs non unitary matrices for the input u= ",a]]
+If[isZeroMatrix[m1 . m2 . m3-a],,Print["Debugging error in CSDecRec: CSD failed on input u= ",a]];
+If[isIdentity[m1 . ConjugateTranspose[m1]]&&isIdentity[m2 . ConjugateTranspose[m2]]&&isIdentity[m3 . ConjugateTranspose[m3]],,Print["Error in CSDecRec: CSD outputs non unitary matrices for the input u= ",a]]
 ];
 dim2=Dimensions[m3][[1]];
 If[analyzeAnalyticQSD,Print["Call MatrixRepToUCY in CSDecRec with input m2= ",m2]];
@@ -1682,7 +1682,7 @@ st2=Reverse[st2];
 stLast=CZ[actSorted[[-1]],actSorted[[1]]];(*Operator corresponding to st2[[-1]]*)
 stLast=RelabelQubits[{stLast},{actSorted[[-1]],actSorted[[1]]},{actSorted[[-1]]-actSorted[[1]]+1,1}][[1]];(*Relabiling qubits to prepare stLast for converison to a matrix*)
 opLast=ListFormToOp[stLast,Log2[dim]];
-m3Merged=opLast.m3; (*Merge the RZ gate into m3*)
+m3Merged=opLast . m3; (*Merge the RZ gate into m3*)
 st2=Drop[st2,-1];(*Ignore last entry in st2, since it was merged into m3*)
 block=Partition[m3Merged,{dim2/2,dim2/2}];
 u1=block[[1,1]];
@@ -1702,7 +1702,7 @@ If[analyzeAnalyticQSD,Print["Finished running SDecRec in CSDecRec."]];
 ];
 nM3=Log2[Dimensions[m3][[1]]];
 op3First=DiagMat[st3[[1]][[2]],{nM3-1,nM3},nM3]; (*extract diagonal gate from m3*)
-m1Merged=m1.op3First;(*ToDo: Improve efficiency of multiplication with diagonal matrix*)
+m1Merged=m1 . op3First;(*ToDo: Improve efficiency of multiplication with diagonal matrix*)
 st3=Drop[st3,1];
 (*As above, improve efficiency in the following preparation to get u1,u2.*)
 block=Partition[m1Merged,{dim2/2,dim2/2}];
@@ -1730,7 +1730,7 @@ st3=CSDecRec[w,Drop[act,1],n,If[free==0,0,free-1],FullSim];
 If[analyzeAnalyticQSD,Print["Finished running CSDecRec in QSDecRec."]];
 nV=Log2[Dimensions[v][[1]]];
 op3First=DiagMat[st3[[1]][[2]],{nV-1,nV},nV];
-v=v.op3First;(*merge diagonal to operator v*)
+v=v . op3First;(*merge diagonal to operator v*)
 st3=Drop[st3,1];
 If[analyzeAnalyticQSD,Print["Call CSDecRec in QSDecRec with input: ",{v,Drop[act,1],n,0}]];
 st1=CSDecRec[v,Drop[act,1],n,0,FullSim];
@@ -1872,14 +1872,14 @@ Block[{$MaxExtraPrecision=500},
 Module[{vals, vecs, unitary, blocksizes, startrow, out, i, Bblock,
   vals2, vec2, unitary2, A1, B1, mA, nA, mB, nB, valA, valB,
   vec,ord},{mA, nA} = Dimensions[A]; {mB, nB} = Dimensions[B];
- If[A.B - B.A != ConstantArray[0, {mA, nA}],A1=Chop[A];B1=Chop[B],A1=A;B1=B,A1=Simplify[A];B1=Simplify[B];]; {vals,unitary}=EigensystemExact[A1,precision];
+ If[A . B - B . A != ConstantArray[0, {mA, nA}],A1=Chop[A];B1=Chop[B],A1=A;B1=B,A1=Simplify[A];B1=Simplify[B];]; {vals,unitary}=EigensystemExact[A1,precision];
  blocksizes =
   Transpose[
     Tally[vals,
      If[NumericQ[precision], Chop[N[#1 - #2], precision] == 0 &,
       Chop[N[#1 - #2]] == 0 &]]][[2]]; startrow = 1; out = {};
  For[i = 1, i <= Dimensions[blocksizes][[1]], i++,
-  Bblock = Chop[Take[unitary.B1.If[OptionValue[FullSimp],CTSimplify[unitary],CT[unitary]], {startrow,
+  Bblock = Chop[Take[unitary . B1 . If[OptionValue[FullSimp],CTSimplify[unitary],CT[unitary]], {startrow,
      startrow - 1 + blocksizes[[i]]}, {startrow,
      startrow - 1 + blocksizes[[i]]}]];
   startrow = startrow + blocksizes[[i]];
@@ -1887,10 +1887,10 @@ Module[{vals, vecs, unitary, blocksizes, startrow, out, i, Bblock,
  unitary2 = IdentityMatrix[Dimensions[Bblock][[1]]],
  {vals2,unitary2}=If[OptionValue[FullSimp],FullSimplifyNoRoots[EigensystemExact[Bblock,precision]],Simplify[EigensystemExact[Bblock,precision]]]];
   If[i == 1, out = unitary2, 
-  out = DirectSum[out, unitary2]]];out = out.unitary;
+  out = DirectSum[out, unitary2]]];out = out . unitary;
   If[OptionValue[FullSimp],
- {valA,valB,vec}={FullSimplifyNoRoots[Diagonal[out.A1.CTSimplify[out]]],FullSimplifyNoRoots[Diagonal[out.B1.CTSimplify[out]]],FullSimplifyNoRoots[out]},
- {valA,valB,vec}={Simplify[Diagonal[out.A1.CT[out]]],Simplify[Diagonal[out.B1.CT[out]]],Simplify[out]}];(* The next If is not needed,
+ {valA,valB,vec}={FullSimplifyNoRoots[Diagonal[out . A1 . CTSimplify[out]]],FullSimplifyNoRoots[Diagonal[out . B1 . CTSimplify[out]]],FullSimplifyNoRoots[out]},
+ {valA,valB,vec}={Simplify[Diagonal[out . A1 . CT[out]]],Simplify[Diagonal[out . B1 . CT[out]]],Simplify[out]}];(* The next If is not needed,
  but can be useful to flag problems *)
 (* If[Chop[N[CT[vec].DiagonalMatrix[valA].vec - A1]] !=
     ConstantArray[0, {mA, nA}] ||
@@ -1935,7 +1935,7 @@ Gam[a_]:=
 Module[{i,t},(
 t=KroneckerProduct[PauliMatrix[2],PauliMatrix[2]];
 (*For[i=2,i<n,i++,t=KroneckerProduct[t,PauliMatrix[2]]];*)
-a.t.a\[Transpose].t
+a . t . a\[Transpose] . t
 )]
 
 (*
@@ -1954,10 +1954,10 @@ sv = sv * I;
 counter++;
 ];
 m={{1,0,0,I},{0,I,1,0},{0,I,-1,0},{1,0,0,-I}}/Sqrt[2];
-u2=Simplify[CT[m].su.m];
-If[FullSim,u3=FullSimplifyNoRoots[u2.u2\[Transpose]],u3=Simplify[u2.u2\[Transpose]]];
-v2=Simplify[CT[m].sv.m];
-If[FullSim,v3=FullSimplifyNoRoots[v2.v2\[Transpose]],v3=Simplify[v2.v2\[Transpose]]];
+u2=Simplify[CT[m] . su . m];
+If[FullSim,u3=FullSimplifyNoRoots[u2 . u2\[Transpose]],u3=Simplify[u2 . u2\[Transpose]]];
+v2=Simplify[CT[m] . sv . m];
+If[FullSim,v3=FullSimplifyNoRoots[v2 . v2\[Transpose]],v3=Simplify[v2 . v2\[Transpose]]];
 If[analyzeAnalyticDecUnitary2Qubits,
 Print["Matrix u2 in TwoQubitFindMatchingProductMatrices: ",u2];
 Print["Matrix u3 in TwoQubitFindMatchingProductMatrices: ",u3];
@@ -2008,11 +2008,11 @@ vvec[[1]]=-vvec[[1]];
 If[Det[uvec] < 0 ,
 uvec[[1]]=-uvec[[1]];
 ];
-mat1=If[FullSim,FullSimplifyNoRoots[m.Transpose[uvec].vvec.CTSimplify[m]],Simplify[m.Transpose[uvec].vvec.CT[m]]];
+mat1=If[FullSim,FullSimplifyNoRoots[m . Transpose[uvec] . vvec . CTSimplify[m]],Simplify[m . Transpose[uvec] . vvec . CT[m]]];
 If[analyzeAnalyticDecUnitary2Qubits,
 Print["Matrix mat1 in TwoQubitFindMatchingProductMatrices: ",mat1];
 ];
-mat2=If[FullSim,FullSimplifyNoRoots[m.CTSimplify[v2].Transpose[vvec].Simplify[uvec.u2.CTSimplify[m]]],Simplify[m.CT[v2].Transpose[vvec].Simplify[uvec.u2.CT[m]]]];
+mat2=If[FullSim,FullSimplifyNoRoots[m . CTSimplify[v2] . Transpose[vvec] . Simplify[uvec . u2 . CTSimplify[m]]],Simplify[m . CT[v2] . Transpose[vvec] . Simplify[uvec . u2 . CT[m]]]];
 If[analyzeAnalyticDecUnitary2Qubits,
 Print["Matrix mat2 in TwoQubitFindMatchingProductMatrices: ",mat2];
 ];
@@ -2107,7 +2107,7 @@ we can fix this, at the cost of being out by a diagonal gate
 
 If[Abs[Im[Tr[N[Gam[su]]]]] > OptionValue[precision] && OptionValue[UpToDiagonal],
 traceFixingMatrix = Simplify[RealTrace3[su]];
-su = Simplify[traceFixingMatrix.su];
+su = Simplify[traceFixingMatrix . su];
 ,
 traceFixingMatrix = IdentityMatrix[4];
 ];
@@ -2122,7 +2122,7 @@ If[OptionValue[FullSimp],
 del=Arg[FullSimplifyNoRoots[eVals[[1]]*eVals[[3]]]]/2;
 phi=Arg[FullSimplifyNoRoots[eVals[[1]]/eVals[[3]]]]/2,del=Arg[Simplify[eVals[[1]]*eVals[[3]]]]/2;
 phi=Arg[Simplify[eVals[[1]]/eVals[[3]]]]/2];
-v=CNOTM[2,1,2].KroneckerProduct[SimplifyTrigo[RotGate[del,zType]],SimplifyTrigo[RotGate[phi,xType]]].CNOTM[2,1,2];
+v=CNOTM[2,1,2] . KroneckerProduct[SimplifyTrigo[RotGate[del,zType]],SimplifyTrigo[RotGate[phi,xType]]] . CNOTM[2,1,2];
 If[analyzeAnalyticDecUnitary2Qubits,
 Print["Matrix su in DecUnitary2QubitsHelp (case: two C-NOTs): ",su];
 Print["Matrix v in DecUnitary2QubitsHelp (case: two C-NOTs): ",v]
@@ -2161,9 +2161,9 @@ Return[st]
 Otherwise we need three cnots
 see "http://web.eecs.umich.edu/~imarkov/pubs/jour/pra04-univ.pdf" - Minimal Universal Two-Qubit CNOT -based Circuits Theorem VI.3
 *)
-su = CNOTM[1,2,2].su;
+su = CNOTM[1,2,2] . su;
 traceFixingMatrix = Simplify[RealTrace3[su]];
-su = Simplify[traceFixingMatrix.su];
+su = Simplify[traceFixingMatrix . su];
 st = DecUnitary2QubitsHelp[su, n, {precision-> OptionValue[precision], UpToDiagonal->False,FullSimp->OptionValue[FullSimp]}];
 Return[Join[{{zType,-Arg[traceFixingMatrix[[1,1]]/traceFixingMatrix[[2,2]]],n-1},{cnotType,n,n-1}}, st]];
 ];
@@ -2194,7 +2194,7 @@ Label[LabelEnd];
 out
 ]
 
-isListEqualOpUpToPhase[st_,mat_,free_:0]:=If[st!={},isIdentityUpToPhase[ConjugateTranspose[mat[[All,1;;2^(Log2[Dimensions[mat][[1]]]-free)]]].(CreateIsometryFromList[st][[All,1;;2^(Log2[Dimensions[mat][[1]]]-free)]])],isIdentityUpToPhase[mat]]
+isListEqualOpUpToPhase[st_,mat_,free_:0]:=If[st!={},isIdentityUpToPhase[ConjugateTranspose[mat[[All,1;;2^(Log2[Dimensions[mat][[1]]]-free)]]] . (CreateIsometryFromList[st][[All,1;;2^(Log2[Dimensions[mat][[1]]]-free)]])],isIdentityUpToPhase[mat]]
 
 (*Generates the rotation matrix corresponding to the input angle \[Alpha] and pauli matrix i*)
 RotGate[\[Alpha]_,i_]:=If[Dimensions[N[\[Alpha]]]==={},
@@ -2249,10 +2249,10 @@ XX[phi_,i_,j_]:={xxType,phi,{i,j}}
 RGate[th_,phi_,i_]:={rType,{th,phi},i}
 
 (*Given a,b,c,d, returns the matrix specified by e^ia*Rz(b).Ry(c).Rz(d) *)
-ApplyZYZ[a_,b_,c_,d_]:=Exp[I*d]*RotGate[c,zType].RotGate[b,yType].RotGate[a,zType]
+ApplyZYZ[a_,b_,c_,d_]:=Exp[I*d]*RotGate[c,zType] . RotGate[b,yType] . RotGate[a,zType]
 
 (*Given a,b,c,d, returns the matrix specified by e^ia*Rx(b).Ry(c).Rx(d) *)
-ApplyXYX[a_,b_,c_,d_]:=Exp[I*d]*RotGate[c,xType].RotGate[b,yType].RotGate[a,xType]
+ApplyXYX[a_,b_,c_,d_]:=Exp[I*d]*RotGate[c,xType] . RotGate[b,yType] . RotGate[a,xType]
 
 (*Helper: Check if expression is bigger than zero*)
 isBiggerThanZero[expr_]:=If[Chop[N[expr]]>0,True,False,Throw[StringForm["Error in isBiggerThanZero[]. It could not be determined
@@ -2322,7 +2322,7 @@ r=NormSimplify[vec];
 If[Chop[N[r]] == 0 || (n==0 && Chop[N[vec[[2,1]]]]==0) || (n==1 && Chop[N[vec[[1,1]]]]==0),
 mat,
 psi=Simplify[vec/r];
-phi=FullSimplifyNoRoots[(-CTSimplify[psi].mat[[2]])[[1]]*mat[[1]]+(CTSimplify[psi].mat[[1]])[[1]]*mat[[2]]];
+phi=FullSimplifyNoRoots[(-CTSimplify[psi] . mat[[2]])[[1]]*mat[[1]]+(CTSimplify[psi] . mat[[1]])[[1]]*mat[[2]]];
 gate=KroneckerProduct[mat[[n+1]],CTSimplify[psi]]+KroneckerProduct[mat[[-(n+1)]],ConjSimplify[phi]*(-1)^n],
 Throw[StringForm["Error: If condition in QubitInvert could did neither evaluate to True nor to False"]]
 ]
@@ -2380,7 +2380,7 @@ considers one qubit) *)
 MultiplySQGates[st_,FullSimp_:True]:=Module[{mat,i,stTemp},(mat=IdentityMatrix[2];
 For[i=1,i<=Length[st],i++,
 stTemp={st[[i]][[1]],st[[i]][[2]],1};
-mat=mat.SimplifyTrigo[ListFormToOp[stTemp,1]]];
+mat=mat . SimplifyTrigo[ListFormToOp[stTemp,1]]];
 mat
 )];
 
@@ -2416,12 +2416,12 @@ ReorderedSVD[m_,FullSimp_:True] :=
     (* Does the QL decomposition but making the diagonal entries of the left triangular matrix L positive *)
 QLDecompositionPos[m_,FullSimp_:True] := 
  Module[{q, l, s}, {q, l} = QLDecomposition[m]; 
-  s = DiagonalMatrix[SignZeroPos[Diagonal[l]]];If[FullSimp, FullSimplifyNoRoots[{s.q, s.l}],Simplify[{s.q, s.l}]]]
+  s = DiagonalMatrix[SignZeroPos[Diagonal[l]]];If[FullSimp, FullSimplifyNoRoots[{s . q, s . l}],Simplify[{s . q, s . l}]]]
 
 (* Does the RQ decomposition making the diagonal entries of the right trianglar matrix R negative *)
 RQDecompositionNeg[m_,FullSimp_:True] := 
  Module[{q, r, s}, {r, q} = RQDecomposition[m]; 
-  s = DiagonalMatrix[-SignZeroNeg[Diagonal[r]]];If[FullSimp,FullSimplifyNoRoots[{r.s, q.s}],Simplify[{r.s, q.s}]]]
+  s = DiagonalMatrix[-SignZeroNeg[Diagonal[r]]];If[FullSimp,FullSimplifyNoRoots[{r . s, q . s}],Simplify[{r . s, q . s}]]]
 
 (*-------------------------------------------Decomposition of multi-controlled gates (public) --------------------------------------------*)
 
@@ -2598,8 +2598,8 @@ DecToffoliUpToDiagonal2[{tofcontrol_,toftarget_,tofbits_}]:=DecToffoliUpToDiagon
 DecSingleMCG[u_, control_, target_, bits_] :=
  Module[{\[Alpha], \[Beta], \[Gamma], \[Delta], a, b, c,  mat, tt, v, st}, (
 {\[Delta],\[Gamma],\[Beta],\[Alpha]} =ZYZDecomposition[u];
-a = RotGate[\[Beta], zType].RotGate[\[Gamma]/2, yType];
-b = RotGate[-\[Gamma]/2, yType].RotGate[-(\[Delta] + \[Beta])/2, zType];
+a = RotGate[\[Beta], zType] . RotGate[\[Gamma]/2, yType];
+b = RotGate[-\[Gamma]/2, yType] . RotGate[-(\[Delta] + \[Beta])/2, zType];
 c = RotGate[(\[Delta] - \[Beta])/2, zType];
 st={{zType,Chop@(\[Delta] - \[Beta])/2,target},CNOT[control,target],{zType,Chop@-(\[Delta] + \[Beta])/2,target},{yType,Chop@-\[Gamma]/2,target},CNOT[control,target],{yType,Chop@\[Gamma]/2,target},{zType,Chop@\[Beta],target}};
 If[Chop[N[\[Alpha]]]!=0,
@@ -2880,8 +2880,8 @@ Module[{r1temp,tempR,a,b,u,v,r,r1,r2,d,x,x1,det,h,op,op1,op2,str,str1,str2,st,st
 If[analyzeAnalyticCCDec,Print["Calling DecUCGUpToDiagonalHelp2 with input {gates,control,target,bits}= ",{gates,control,target,bits}]];
 a=gates[[1;;Length[gates]/2]];
 b=gates[[Length[gates]/2+1;;-1]];
-If[FullSim,x=FullSimplifyNoRoots[Table[a[[i]].CTSimplify[b[[i]]],{i,1,Length[a]}]];
-det=FullSimplifyNoRoots[Det/@x],x=Simplify[Table[a[[i]].CT[b[[i]]],{i,1,Length[a]}]];
+If[FullSim,x=FullSimplifyNoRoots[Table[a[[i]] . CTSimplify[b[[i]]],{i,1,Length[a]}]];
+det=FullSimplifyNoRoots[Det/@x],x=Simplify[Table[a[[i]] . CT[b[[i]]],{i,1,Length[a]}]];
 det=Simplify[Det/@x]];
 If[analyzeAnalyticCCDec,Print["Calculating x1 in DecUCGUpToDiagonalHelp2"]];
 x1=x/Sqrt[det];
@@ -2899,8 +2899,8 @@ But: One has to handle the cases where we devide by zero!*)
 If[analyzeAnalyticCCDec,Print["Finished caclulating r1,r2 in DecUCGUpToDiagonalHelp2"]];
 r=Table[{{r1[[i]],0},{0,r2[[i]]}},{i,1,Length[r1]}];
 If[analyzeAnalyticCCDec,Print["Calling EigensystemExact for inputs r[[i]].x[[i]].r[[i]]] with r= ",r," and x= ", x]];
-If[FullSim,sys=FullSimplifyNoRoots[Table[EigensystemExact[Simplify[r[[i]].FullSimplifyNoRoots[x[[i]].r[[i]]]]],{i,1,Length[x]}]],
-sys=Simplify[Table[EigensystemExact[Simplify[r[[i]].Simplify[x[[i]].r[[i]]]]],{i,1,Length[x]}]]];
+If[FullSim,sys=FullSimplifyNoRoots[Table[EigensystemExact[Simplify[r[[i]] . FullSimplifyNoRoots[x[[i]] . r[[i]]]]],{i,1,Length[x]}]],
+sys=Simplify[Table[EigensystemExact[Simplify[r[[i]] . Simplify[x[[i]] . r[[i]]]]],{i,1,Length[x]}]]];
 If[analyzeAnalyticCCDec,Print["Finished call of EigensystemExact. Found sys= ",sys]];
 vals=sys[[All,1]];
 vecs=sys[[All,2]];
@@ -2918,8 +2918,8 @@ If[FullSim,d=FullSimplifyNoRoots[DiagonalMatrix/@Sqrt[vals]];
 u=FullSimplifyNoRoots[Transpose/@vecs],d=Simplify[DiagonalMatrix/@Sqrt[vals]];
 u=Simplify[Transpose/@vecs]];
 If[analyzeAnalyticCCDec,Print["Calculating table v for decomposing UCG..."]];
-If[FullSim,v=Table[SimplifyTrigo[d[[i]].CTSimplify[u[[i]]].CTSimplify[r[[i]]].b[[i]]],{i,1,Length[d]}],
-v=Table[Simplify[d[[i]].CT[u[[i]]].CT[r[[i]]].b[[i]]],{i,1,Length[d]}]];
+If[FullSim,v=Table[SimplifyTrigo[d[[i]] . CTSimplify[u[[i]]] . CTSimplify[r[[i]]] . b[[i]]],{i,1,Length[d]}],
+v=Table[Simplify[d[[i]] . CT[u[[i]]] . CT[r[[i]]] . b[[i]]],{i,1,Length[d]}]];
 If[analyzeAnalyticCCDec,Print["Found table v: ",v]];
 
 If[Length[control]==1,
@@ -2930,7 +2930,7 @@ st2=DecUCGUpToDiagonalHelp2[SimplifyTrigo[v],Drop[control,1],target,bits,FullSim
 If[analyzeAnalyticCCDec,Print["Finished running DecUCGUpToDiagonalHelp2"]];
 (*Absorb diagonal gate diagRz into uniformly controlled gate u*)
 diagRz=st2[[1]][[2]];
-u=Table[u[[i]].DiagonalMatrix[{diagRz[[2*i-1]],diagRz[[2*i]]}],{i,Length[u]}];
+u=Table[u[[i]] . DiagonalMatrix[{diagRz[[2*i-1]],diagRz[[2*i]]}],{i,Length[u]}];
 st2=Drop[st2,1];
 st1=DecUCGUpToDiagonalHelp2[SimplifyTrigo[u],Drop[control,1],target,bits,FullSim];
 If[analyzeAnalyticCCDec,Print["Finished running DecUCGUpToDiagonalHelp2"]];
@@ -2940,9 +2940,9 @@ If[FullSim,st1=FullSimplifyNoRoots[Expand[st1]];
 st2=FullSimplifyNoRoots[Expand[st2]],st1=Simplify[Expand[st1]];
 st2=Simplify[Expand[st2]]];
 h={{1,1},{1,-1}}/Sqrt[2];
-st2[[1]][[1]]=h.st2[[1]][[1]];
+st2[[1]][[1]]=h . st2[[1]][[1]];
 (*Absorg Z-rotation and Hadamard gate into u*)
-st1[[-1]][[1]]=st1[[-1]][[1]].RotGate[Pi/2,zType].h;
+st1[[-1]][[1]]=st1[[-1]][[1]] . RotGate[Pi/2,zType] . h;
 (*Merge Rz gate on first qubit into the uniformly controlled Rz rotaiton gate r*)
 If[FullSim,r=Join[CTSimplify/@r,r],r=Join[CT/@r,r]];(*Create full gate r*)
 r=BlockToDiagonal[r];(*write as a diagonal gate*)
@@ -2994,7 +2994,7 @@ st2={};
 For[i=0,i<numCols,i++,
 If[i==0&& (OptionValue[FirstColumn]=="StatePreparation"),
 st1=InverseGateList[Reverse[StatePreparation[Transpose[{u2[[All,1]]}],,{Simp->OptionValue[Simp],IgnoreAncilla->True,FullSimp->OptionValue[FullSimp]}]]];
-u2=CreateIsometryFromList[Reverse[st1],bits,FullSimp->OptionValue[FullSimp]].u2;
+u2=CreateIsometryFromList[Reverse[st1],bits,FullSimp->OptionValue[FullSimp]] . u2;
 , 
 If[i==0&& (OptionValue[FirstColumn]!= "UCG"),Throw[StringForm["Error: Option valus 'FirstColumn' in ColumnByColumnDec is unknown."]]];
 {st1, u2} = DecSingleColumn[u2,i, bits,isAnalytic,OptionValue[FullSimp]];
@@ -3374,7 +3374,7 @@ state = s1[[1,1]]Flatten[KroneckerProduct[U[[1]], a1[[1]],b1[[1]]]]+ s2[[1,1]]Fl
 (*So now we prepareCos[\[Theta]]|000> + Sin[\[Theta]]|0> \[CircleTimes] Subscript[u, 2]|\[Beta]'> \[CircleTimes]Subscript[u, 3]|\[Gamma]'>, before applying the inverse of Subscript[u, 1]\[CircleTimes]Subscript[u, 2]\[CircleTimes]Subscript[u, 3]*)
 highestNonSpecialQubit = If[qubit == 3, 2, 3];
 otherQubit = If[qubit == 1, 2, 1];
-gammaPrime = u3.(b2[[1]]);
+gammaPrime = u3 . (b2[[1]]);
 {g1, g2} =Arg[gammaPrime];
 {m1, m2} =Abs[gammaPrime];
 theta = ArcTan2[m1,m2];
@@ -3396,7 +3396,7 @@ Return[Catenate[{
 {cnotType,qubit, highestNonSpecialQubit},
 {yType,-\[Pi]/2+theta,highestNonSpecialQubit}
 },
-Map[relableFn,Reverse[StatePrep2Qubits[{s1[[1,1]]Exp[-I (g1-g2)/2],0,0,0} + s2[[1,1]]Flatten[KroneckerProduct[{0,1},Exp[I (g1+g2)/2]u2.(a2[[1]])]],,IgnoreAncilla->True]]]
+Map[relableFn,Reverse[StatePrep2Qubits[{s1[[1,1]]Exp[-I (g1-g2)/2],0,0,0} + s2[[1,1]]Flatten[KroneckerProduct[{0,1},Exp[I (g1+g2)/2]u2 . (a2[[1]])]],,IgnoreAncilla->True]]]
 }
 ]
 ];
@@ -3590,7 +3590,7 @@ Print["StatePrepRecursive: Input given does not have the right dimensions to be 
 (* For inputs x and y (n-by-m matrices) which satsify x^\[Dagger]x = y^\[Dagger]y, outputs u (n-by-n) such that ux = y - based on Lemma A.1 from Knill 1995: http://arxiv.org/pdf/quant-ph/9508006. Should output error message if x^\[Dagger]x \[NotEqual] y^\[Dagger]y or if the matrices have different dimension*)
 XToYTransform[x_,y_]  := Module[{u,w,\[CapitalSigma],v,svd,a,b,c,n,m,\[Sigma],\[Sigma]inv,i},
 
-If[Chop[N[CT[x].x  -CT[y].y]] == 0*IdentityMatrix[Dimensions[y][[2]]] && Dimensions[x] == Dimensions[y],
+If[Chop[N[CT[x] . x  -CT[y] . y]] == 0*IdentityMatrix[Dimensions[y][[2]]] && Dimensions[x] == Dimensions[y],
 (*code given that the condition x^\[Dagger]x = y^\[Dagger]y holds*)
 
 (*find dimensions*)
@@ -3598,7 +3598,7 @@ n = Dimensions[x][[1]]; m=Dimensions[x][[2]];
 
 {w,\[CapitalSigma],v} = SingularValueDecomposition[y]; v = CT[v];
 
-a = x.CT[v]; (*n-by-m*)
+a = x . CT[v]; (*n-by-m*)
 (*find diagonal elts - should be in vector form*)
 \[Sigma] = Diagonal[\[CapitalSigma]]; \[Sigma]inv = {}; For[i = 1, i <= Dimensions[\[Sigma]][[1]], i++,
  If[Chop[N[\[Sigma][[i]]]] == 0, \[Sigma]inv =
@@ -3609,7 +3609,7 @@ a = x.CT[v]; (*n-by-m*)
 b = CT[a]; (*m-by-n*)
 For[i = 1, i <= m, i++,b[[i]] = \[Sigma]inv[[i]]*b[[i]]];
 c = CT[IsoToUnitary[CT[b]]];
-u = w.c;
+u = w . c;
 Return[u],
 Return[Print["XToYTransform: The condition \!\(\*SuperscriptBox[\(x\), \(\[Dagger]\)]\)x = \!\(\*SuperscriptBox[\(y\), \(\[Dagger]\)]\)y does not hold or the matrices are of different dimension"]],
 Return[Print["XToYTransform: The condition \!\(\*SuperscriptBox[\(x\), \(\[Dagger]\)]\)x = \!\(\*SuperscriptBox[\(y\), \(\[Dagger]\)]\)y does not hold or the matrices are of different dimension - are they even matrices?"]]
@@ -3633,9 +3633,9 @@ u = Join[CT[v],CT[w]];
 
 (*Find an x such that ConjugateTranspose[v].x has the first m cols of x*)
 x = GiveX[v];  x1 = x[[1;;m]]; x2 = x[[m+1;; n]];
-p = CT[w].x;
+p = CT[w] . x;
 q = XToYTransform[p,x2];
-z = CT[Join[CT[v],q.CT[w]]];
+z = CT[Join[CT[v],q . CT[w]]];
 Return[z]
 ]
 
@@ -3759,8 +3759,8 @@ Switch[OptionValue[UseDec],
      gates = gates1;
      
      (*find merged mats*)
-     merge1 = CT[mats2[[1]]].mats1[[1]];
-     merge2 = CT[mats2[[2]]].mats1[[2]];
+     merge1 = CT[mats2[[1]]] . mats1[[1]];
+     merge2 = CT[mats2[[2]]] . mats1[[2]];
      
      (*add gates from first merged matrix*)
      
@@ -3818,9 +3818,9 @@ KrausToChoi[set_] :=
   ent = Sum[
      KroneckerProduct[KetV[i - 1, Dimensions[set[[1]]][[2]]], 
       KetV[i - 1, Dimensions[set[[1]]][[2]]]], {i, 1, 
-      Dimensions[set[[1]]][[2]]}];ent=ent.CT[ent]; 
+      Dimensions[set[[1]]][[2]]}];ent=ent . CT[ent]; 
   Sum[KroneckerProduct[IdentityMatrix[Dimensions[set[[1]]][[2]]], 
-     set[[k]]].ent.KroneckerProduct[
+     set[[k]]] . ent . KroneckerProduct[
      IdentityMatrix[Dimensions[set[[1]]][[2]]], CT[set[[k]]]], {k, 1, 
     Dimensions[set][[1]]}]]
 
@@ -3951,7 +3951,7 @@ IsQubitIsometry[v_,methodName_:"UNKNOWN"]:=Module[{numRow,numCol},
   If[IntegerQ[Log2[numRow]],,Throw[StringJoin["The number of rows of the input isometry in the method ",methodName ," is not a power of two."]]];
   If[IntegerQ[Log2[numCol]],,Throw[StringJoin["The number of columns of the input isometry in the method ",methodName ," is not a power of two."]]];
    If[numCol>numRow,Throw[StringJoin["The number of columns of the input matrix in the method ",methodName ," is bigger than the number of rows (i.e., it is not an isometry)."]]];
-  If[isIdentity[ConjugateTranspose[N[v]].N[v]],,Print[StringJoin["Warning: The input matrix v in the method ",methodName ," is not an isometry up to numerical precision since for m:=ConjugateTranspose[v].v, we have Chop[Norm[m-IdentityMatrix[Length[m]]]]\[NotEqual]0."]]]; 
+  If[isIdentity[ConjugateTranspose[N[v]] . N[v]],,Print[StringJoin["Warning: The input matrix v in the method ",methodName ," is not an isometry up to numerical precision since for m:=ConjugateTranspose[v].v, we have Chop[Norm[m-IdentityMatrix[Length[m]]]]\[NotEqual]0."]]]; 
   ]
   
 IsListFormHelp[gate_,methodName_]:=Module[{},
@@ -4093,7 +4093,7 @@ _,nbOps=nKraus
     (*create random operators summing to Identity*)
   iso = PickRandomIsometry[dimA, dimB*totOp];
   For[i=1, i<= totOp, i++,
-    opList = Insert[opList, ((IdentityMatrix[dimB]\[CircleTimes]BraV[i-1,totOp]).iso),-1]];
+    opList = Insert[opList, ((IdentityMatrix[dimB]\[CircleTimes]BraV[i-1,totOp]) . iso),-1]];
   currentOp = 1;
   (*partition random operators created above into separate channels*)
   For[i=1, i <= nChan, i++,
@@ -4113,7 +4113,7 @@ _,nbOps=nKraus
     (*create random operators summing to Identity*)
   iso = RPickRandomIsometry[dimA, dimB*totOp];
   For[i=1, i<= totOp, i++,
-    opList = Insert[opList, ((IdentityMatrix[dimB]\[CircleTimes]BraV[i-1,totOp]).iso),-1]];
+    opList = Insert[opList, ((IdentityMatrix[dimB]\[CircleTimes]BraV[i-1,totOp]) . iso),-1]];
   currentOp = 1;
   (*partition random operators created above into separate channels*)
   For[i=1, i <= nChan, i++,
@@ -4133,7 +4133,7 @@ _,nbOps=nKraus
     (*create random operators summing to Identity*)
   iso = FPickRandomIsometry[dimA, dimB*totOp,prec];
   For[i=1, i<= totOp, i++,
-    opList = Insert[opList, ((IdentityMatrix[dimB]\[CircleTimes]BraV[i-1,totOp]).iso),-1]];
+    opList = Insert[opList, ((IdentityMatrix[dimB]\[CircleTimes]BraV[i-1,totOp]) . iso),-1]];
   currentOp = 1;
   (*partition random operators created above into separate channels*)
   For[i=1, i <= nChan, i++,
@@ -4222,7 +4222,7 @@ NearbyIsometry[iso_] := Module[{i,u,v,w},
   {u,w,v} = SingularValueDecomposition[iso];
    For[i=1, i<= Length[w[[1]]], i++,
     w[[i]][[i]] = 1];
-  u.w.CT[v]
+  u . w . CT[v]
 ]
 
 (* Helper functions for applying gates to a state, potentially requiring ancillas *)
@@ -4232,11 +4232,11 @@ AddAncilla[vec_] := Module[{},
 ];
 RemoveAncilla[vec_] := Module[{res},
 	res = vec[[1;;;;2]];
-	Assert[Chop[(CT[res].res)[[1,1]]-1] == 0];
+	Assert[Chop[(CT[res] . res)[[1,1]]-1] == 0];
 	res
 ];
 ApplyUnitaryWithAncillas[U_,vec_,n_] := Module[{},
-	Nest[RemoveAncilla,U.Nest[AddAncilla,vec,n],n]
+	Nest[RemoveAncilla,U . Nest[AddAncilla,vec,n],n]
 ];
 ApplyGates[gates_,vec_,numeric_] := Module[{requiredQubits,stateQubits,actualQubits,U},
 	requiredQubits = Max[Array[gates[[#,3]]&,Length[gates]]];
@@ -4340,7 +4340,7 @@ ComputeHouseholderVector[vec_, i_] := Module[{vec2},
 
 (* Gives the same result as applying the gates up to global phase *)
 ApplyStandardHouseholderReflection[vec_, iso_] := Module[{},
-	Chop[iso - 2*(vec.(CT[vec].iso))]
+	Chop[iso - 2*(vec . (CT[vec] . iso))]
 ];
 
 Options[DenseHouseholderDec] = {Simp->True,FullSimp->True};
@@ -4835,7 +4835,7 @@ DecPermutationUpToDiagonal[iso_,numeric_] := Module[{i, j, n, m, list, gates, bi
 DecPermutedDiagonalIsometry[V_,numeric_] := Module[{iso, vec, n, m, gates, gatesPerm, gatesDiag, gatesDiag2},
 	iso = V;
 	{n, m} = Map[Log2, Dimensions[iso]];
-	vec = SparseArray[iso.Table[{1}, 2^m]];
+	vec = SparseArray[iso . Table[{1}, 2^m]];
 	gates = PivotingDec[vec,TrivialSplitting->True][[1]];
 	iso = ApplyGatesToIsometry[gates,iso,numeric];
 	
@@ -4857,9 +4857,9 @@ If[dig==0&&j==i+1,blanks=i];While[dig!=0&&j<=dim2,col=Insert[col,dig,-1];j++;dig
 Options[PickRandomSparseIsometry]={permute->True};
 PickRandomSparseIsometry[dim1_,dim2_,env2:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{i,j,vec,out={},count=0,countmax=100,env},
 If[env2===Null,env=PickRandomEnvelope[dim1,dim2][[1]],env=env2];
-While[count<=countmax&&(out==={}||Chop[CT[out].out-IdentityMatrix[dim1]]!=0*IdentityMatrix[dim1]),out={};
+While[count<=countmax&&(out==={}||Chop[CT[out] . out-IdentityMatrix[dim1]]!=0*IdentityMatrix[dim1]),out={};
 For[i=1,i<=dim1,i++,vec=Transpose[{PadRight[Flatten[PickRandomPsi[env[[i]]-1]],dim2]}];
-For[j=1,j<i,j++,vec=vec-Tr[CT[out[[j]]].vec]*out[[j]]];If[Chop[Tr[CT[vec].vec]]==0,count++,vec=vec/(Tr[CT[vec].vec])^(1/2)];
+For[j=1,j<i,j++,vec=vec-Tr[CT[out[[j]]] . vec]*out[[j]]];If[Chop[Tr[CT[vec] . vec]]==0,count++,vec=vec/(Tr[CT[vec] . vec])^(1/2)];
 out=Insert[out,vec,-1]];If[out==={},,out=Transpose[Map[Flatten[#]&,out]]]];
 If[count==1+countmax,Print["PickRandomSparseIsometry: Unable to find isometry for given envelope"]];
 If[OptionValue[permute],out=Permute[Transpose[Permute[Transpose[out],RandomPermutation[dim1]]],RandomPermutation[dim2]]];out]
@@ -4867,9 +4867,9 @@ If[OptionValue[permute],out=Permute[Transpose[Permute[Transpose[out],RandomPermu
 Options[RPickRandomSparseIsometry]={permute->True};
 RPickRandomSparseIsometry[dim1_,dim2_,env2:Except[_?OptionQ]:Null,OptionsPattern[]]:=Module[{i,j,vec,out={},count=0,countmax=100,env},
 If[env2===Null,env=PickRandomEnvelope[dim1,dim2][[1]],env=env2];
-While[count<=countmax&&(out==={}||Chop[CT[out].out-IdentityMatrix[dim1]]!=0*IdentityMatrix[dim1]),out={};
+While[count<=countmax&&(out==={}||Chop[CT[out] . out-IdentityMatrix[dim1]]!=0*IdentityMatrix[dim1]),out={};
 For[i=1,i<=dim1,i++,vec=Transpose[{PadRight[Flatten[RPickRandomPsi[env[[i]]-1]],dim2]}];
-For[j=1,j<i,j++,vec=vec-Tr[CT[out[[j]]].vec]*out[[j]]];If[Chop[Tr[CT[vec].vec]]==0,count++,vec=vec/(Tr[CT[vec].vec])^(1/2)];
+For[j=1,j<i,j++,vec=vec-Tr[CT[out[[j]]] . vec]*out[[j]]];If[Chop[Tr[CT[vec] . vec]]==0,count++,vec=vec/(Tr[CT[vec] . vec])^(1/2)];
 out=Insert[out,vec,-1]];If[out==={},,out=Transpose[Map[Flatten[#]&,out]]]];
 If[count==1+countmax,Print["PickRandomSparseIsometry: Unable to find isometry for given envelope"]];
 If[OptionValue[permute],out=Permute[Transpose[Permute[Transpose[out],RandomPermutation[dim1]]],RandomPermutation[dim2]]];out]

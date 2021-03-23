@@ -30,7 +30,7 @@ False
 ];
 IsEqualUptoPhaseForUnitaries[a_,b_]:=Module[{},
 If[Dimensions[a]==Dimensions[b], ,Return[False]];
-Return[isIdentityUpToPhase[a.ConjugateTranspose[b]]]
+Return[isIdentityUpToPhase[a . ConjugateTranspose[b]]]
 ]
 (*Create a random n\[Times]m permutation matrix*)
 randPermutMat[m_,n_]:=Module[{perm},(
@@ -67,7 +67,7 @@ RU[n_]:=Orthogonalize[RG[n]];
 
 checkIsoToUnitary[iso_]:=Module[{u},( 
 u=IsoToUnitary[iso];
-isIdentity[u.ConjugateTranspose[u]]&&isZero[Norm[iso-u[[All,1;;Dimensions[iso][[2]]]]]]
+isIdentity[u . ConjugateTranspose[u]]&&isZero[Norm[iso-u[[All,1;;Dimensions[iso][[2]]]]]]
 )]
 
 
@@ -88,17 +88,17 @@ checkIsoToUnitary[randPermutMat[2,4]]
 
 checkSimplifyGateLists[st_]:=Module[{u,stNew},( 
 stNew=SimplifyGateList[st];
-isIdentityUpToPhase[ConjugateTranspose[CreateOperationFromGateList[st]].CreateOperationFromGateList[stNew]]
+isIdentityUpToPhase[ConjugateTranspose[CreateOperationFromGateList[st]] . CreateOperationFromGateList[stNew]]
 )]
 
 
-checkRzAngle[angle_]:=isIdentityUpToPhase[RzM[RzAngle[RzM[angle,1]],1].ConjugateTranspose[RzM[angle,1]]]
+checkRzAngle[angle_]:=isIdentityUpToPhase[RzM[RzAngle[RzM[angle,1]],1] . ConjugateTranspose[RzM[angle,1]]]
 
 
-checkRxAngle[angle_]:=isIdentityUpToPhase[RxM[RxAngle[RxM[angle,1]],1].ConjugateTranspose[RxM[angle,1]]]
+checkRxAngle[angle_]:=isIdentityUpToPhase[RxM[RxAngle[RxM[angle,1]],1] . ConjugateTranspose[RxM[angle,1]]]
 
 
-checkRyAngle[angle_]:=isIdentityUpToPhase[RyM[RyAngle[RyM[angle,1]],1].ConjugateTranspose[RyM[angle,1]]]
+checkRyAngle[angle_]:=isIdentityUpToPhase[RyM[RyAngle[RyM[angle,1]],1] . ConjugateTranspose[RyM[angle,1]]]
 
 
 (*Tests for checking basic methods*)
@@ -187,22 +187,22 @@ AppendTo[gates,IdentityMatrix[2]];
 ];
 ];
 invertMat=KroneckerProduct@@gates;
-mcg=invertMat.mcg.invertMat;
-isIdentityUpToPhase[mcg.mat.ConjugateTranspose[ApplyMCG[MCG,mat]]]
+mcg=invertMat . mcg . invertMat;
+isIdentityUpToPhase[mcg . mat . ConjugateTranspose[ApplyMCG[MCG,mat]]]
 ]
 
 
 checkDecToffoliMultiControlUpToDiagonal[control_,target_,n_]:=Module[{i,st,mat},( 
 st=DecToffoliMultiControlUpToDiagonal[control,target,n];
 mat=NMultiplyGates[st,n];
-isDiagonal[mat.ConjugateTranspose[CreateMCToffoli[control,target,n]]]
+isDiagonal[mat . ConjugateTranspose[CreateMCToffoli[control,target,n]]]
 )]
 
 
 checkDecToffoliMultiControl[control_,target_,n_]:=Module[{i,st,mat},( 
 st=DecToffoliMultiControl[control,target,n];
 mat=NMultiplyGates[st,n];
-isIdentityUpToPhase[mat.ConjugateTranspose[CreateMCToffoli[control,target,n]]
+isIdentityUpToPhase[mat . ConjugateTranspose[CreateMCToffoli[control,target,n]]
 ]
 )]
 
@@ -210,28 +210,28 @@ isIdentityUpToPhase[mat.ConjugateTranspose[CreateMCToffoli[control,target,n]]
 checkDecMCSpecialUnitary[su_,control_,target_,n_]:=Module[{i,st,mat},( 
 st=DecMCSpecialUnitary[su,control,target,n];
 mat=NMultiplyGates[st,n];
-isIdentityUpToPhase[mat.ConjugateTranspose[CreateMCG[su,control,target,n]]]
+isIdentityUpToPhase[mat . ConjugateTranspose[CreateMCG[su,control,target,n]]]
 )]
 
 
 checkDecMCG[u_,control_,target_,n_]:=Module[{i,st,mat},( 
 st=DecMCG[u,control,target,n];
 mat=NMultiplyGates[st,n]; 
-isIdentityUpToPhase[mat.ConjugateTranspose[CreateMCG[u,control,target,n]]]
+isIdentityUpToPhase[mat . ConjugateTranspose[CreateMCG[u,control,target,n]]]
 )]
 
 
 checkDecMCSpecialUnitaryUpToDiagonalWithDiagonal[u_,control_,target_,n_]:=Module[{i,st,mat},( 
 st=DecMCSpecialUnitaryUpToDiagonal[u,control,target,n,ReturnDiagonal->True];
 mat=NMultiplyGates[st,n];
-FullSimplify[isIdentityUpToPhase[mat.ConjugateTranspose[CreateMCG[u,control,target,n]]]]
+FullSimplify[isIdentityUpToPhase[mat . ConjugateTranspose[CreateMCG[u,control,target,n]]]]
 )]
 
 
 checkDecMCSpecialUnitaryUpToDiagonal[u_,control_,target_,n_]:=Module[{i,st,mat},( 
 st=DecMCSpecialUnitaryUpToDiagonal[u,control,target,n];
 mat=NMultiplyGates[st,n];
-FullSimplify[isDiagonal[mat.ConjugateTranspose[CreateMCG[u,control,target,n]]]]
+FullSimplify[isDiagonal[mat . ConjugateTranspose[CreateMCG[u,control,target,n]]]]
 )]
 
 
@@ -350,7 +350,7 @@ Print["testAllMCGMethods neither returned True nor False"]
 
 checkApplyUCG[UCG_,mat_]:=Module[{ucg},( 
 ucg=CreateUCG[UCG[[1]],UCG[[2]],UCG[[3]],UCG[[4]]];
-Chop[Norm[ucg.mat-ApplyUCG[UCG,mat]]]==0
+Chop[Norm[ucg . mat-ApplyUCG[UCG,mat]]]==0
 )]
 
 
@@ -361,14 +361,14 @@ checkDecUCGUpToDiagonalWithDiagonal[u_,control_,target_,n_]:=Module[{i,st,mat,di
 st=DecUCGUpToDiagonal[u,control,target,n,ReturnDiagonal->True];
 dia=st[[-1]];
 mat=ApplyDiag[{dia[[2]],dia[[3]],n},MultiplyGates[Drop[st,-1],n]];
-FullSimplify[isIdentityUpToPhase[mat.ConjugateTranspose[CreateUCG[u,control,target,n]]]]
+FullSimplify[isIdentityUpToPhase[mat . ConjugateTranspose[CreateUCG[u,control,target,n]]]]
 )]
 
 
 checkDecUCGUpToDiagonal[u_,control_,target_,n_]:=Module[{i,st,mat},( 
 st=DecUCGUpToDiagonal[u,control,target,n];
 mat=MultiplyGates[st,n];
-FullSimplify[isDiagonal[mat.ConjugateTranspose[CreateUCG[u,control,target,n]]]]
+FullSimplify[isDiagonal[mat . ConjugateTranspose[CreateUCG[u,control,target,n]]]]
 )]
 
 
@@ -389,7 +389,7 @@ st=DecUCY[angles,control,target,n]
 mat=MultiplyGates[st,n];
 m={};
 For[i=1,i<= Length[angles],i++,AppendTo[m,RotGate[angles[[i]],rotAxis]]];
-isIdentityUpToPhase[mat.ConjugateTranspose[CreateUCG[m,control,target,n]]]
+isIdentityUpToPhase[mat . ConjugateTranspose[CreateUCG[m,control,target,n]]]
 )]
 
 
@@ -495,7 +495,7 @@ testUCGs:=If[testApplyUCG&&testDecUCG &&testDecUCGUpToDiagonal&& testDecUCZY,Pri
 
 checkApplyDiag[diagGate_,mat_]:=Module[{diag},( 
 diag=DiagMat[diagGate[[1]],diagGate[[2]],diagGate[[3]]];
-Chop[Norm[diag.mat-ApplyDiag[diagGate,mat]]]==0
+Chop[Norm[diag . mat-ApplyDiag[diagGate,mat]]]==0
 )
 ]
 
@@ -506,7 +506,7 @@ Chop[Norm[diag.mat-ApplyDiag[diagGate,mat]]]==0
 checkDecDiagGate[dia_]:=Module[{st,m},( 
 st=DecDiagGate[dia];
 m=MultiplyGates[st,Log2[Length[dia]]];
-isIdentityUpToPhase[ConjugateTranspose[DiagonalMatrix[dia]].m]
+isIdentityUpToPhase[ConjugateTranspose[DiagonalMatrix[dia]] . m]
 )
 ]
 
@@ -560,7 +560,7 @@ st=ColumnByColumnDec[v];
 iso=NCreateIsometryFromListDim[st,Dimensions[v][[1]]];
 st2=ColumnByColumnDec[v,FirstColumn->"StatePreparation"];
 iso2=NCreateIsometryFromListDim[st2,Dimensions[v][[1]]];
-isIdentityUpToPhase[ConjugateTranspose[v].iso]&&isIdentityUpToPhase[ConjugateTranspose[v].iso2]
+isIdentityUpToPhase[ConjugateTranspose[v] . iso]&&isIdentityUpToPhase[ConjugateTranspose[v] . iso2]
 )
 ]
 
@@ -568,7 +568,7 @@ isIdentityUpToPhase[ConjugateTranspose[v].iso]&&isIdentityUpToPhase[ConjugateTra
 checkColumnByColumnDecExact[v_]:=Module[{i,st,iso},( 
 st=ColumnByColumnDec[v,Simp->False];
 iso=NCreateIsometryFromListDim[st,Dimensions[v][[1]]];
-isIdentityUpToPhase[ConjugateTranspose[v].iso]
+isIdentityUpToPhase[ConjugateTranspose[v] . iso]
 )
 ]
 
@@ -617,7 +617,7 @@ Print["ttestCCDec neither returned True nor False"]]
 checkDecIsometry[v_]:=Module[{i,st,iso,st2,iso2},( 
 st=DecIsometry[v];
 iso=NCreateIsometryFromListDim[st,Dimensions[v][[1]]];
-isIdentityUpToPhase[ConjugateTranspose[v].iso]
+isIdentityUpToPhase[ConjugateTranspose[v] . iso]
 )
 ]
 
@@ -659,7 +659,7 @@ Print["testIsometryDecompositions neither returned True nor False"]]
 checkStatePrep1Qubit[s_]:=Module[{i,st,iso},( 
 st=StatePrep1Qubit[s];
 iso=NCreateIsometryFromListDim[st,Dimensions[s][[1]]];
-isIdentityUpToPhase[ConjugateTranspose[s].iso]
+isIdentityUpToPhase[ConjugateTranspose[s] . iso]
 )
 ]
 
@@ -667,7 +667,7 @@ isIdentityUpToPhase[ConjugateTranspose[s].iso]
 checkStatePrep2Qubits[s_]:=Module[{i,st,iso},( 
 st=StatePrep2Qubits[s];
 iso=NCreateIsometryFromListDim[st,Dimensions[s][[1]]];
-isIdentityUpToPhase[ConjugateTranspose[s].iso]
+isIdentityUpToPhase[ConjugateTranspose[s] . iso]
 )
 ]
 
@@ -675,7 +675,7 @@ isIdentityUpToPhase[ConjugateTranspose[s].iso]
 checkStatePrep3Qubits[s_,class_]:=Module[{i,st,iso},( 
 st=StatePrep3Qubits[s];
 iso=NCreateIsometryFromListDim[st,Dimensions[s][[1]]];
-isIdentityUpToPhase[ConjugateTranspose[s].iso] &&
+isIdentityUpToPhase[ConjugateTranspose[s] . iso] &&
 (CNOTCount[st]==class)
 )
 ]
@@ -685,10 +685,10 @@ checkDecIso12[v_,analytic_:False]:=Module[{i,st,iso},(
 st=DecIso12[v];
 If[analytic,
 iso=CreateIsometryFromListDim[st,Dimensions[v][[1]]];
-isIdentityUpToPhase[ConjugateTranspose[v].N[iso]]
+isIdentityUpToPhase[ConjugateTranspose[v] . N[iso]]
 ,
 iso=NCreateIsometryFromListDim[st,Dimensions[v][[1]]];
-isIdentityUpToPhase[ConjugateTranspose[v].iso]
+isIdentityUpToPhase[ConjugateTranspose[v] . iso]
 ]
 )
 ]
@@ -836,7 +836,7 @@ Print["testIsoSmall neither returned True nor False"]]
 
 checkZYZDec[u_] := Module[{st},
 st = ZYZDec[u,1];
-If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
+If[isIdentityUpToPhase[MultiplyGates[st,1] . ConjugateTranspose[u]], 
 Return[True], 
 Print["ZYZDec failed on input\n", MatrixFormOp[u]];
 Return[False]
@@ -846,7 +846,7 @@ Return[False]
 
 checkXYXDec[u_] := Module[{st},
 st = XYXDec[u,1];
-If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
+If[isIdentityUpToPhase[MultiplyGates[st,1] . ConjugateTranspose[u]], 
 Return[True], 
 Print["ZYZDec failed on input\n", MatrixFormOp[u]]; 
 Return[False]
@@ -856,7 +856,7 @@ Return[False]
 
 checkZXZDec[u_] := Module[{st},
 st = ZXZDec[u,1];
-If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
+If[isIdentityUpToPhase[MultiplyGates[st,1] . ConjugateTranspose[u]], 
 Return[True], 
 Print["ZXZDec failed on input\n", MatrixFormOp[u]]; 
 Return[False]
@@ -866,7 +866,7 @@ Return[False]
 
 checkXZXDec[u_] := Module[{st},
 st = XZXDec[u,1];
-If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
+If[isIdentityUpToPhase[MultiplyGates[st,1] . ConjugateTranspose[u]], 
 Return[True], 
 Print["XZXDec failed on input\n", MatrixFormOp[u]]; 
 Return[False]
@@ -876,7 +876,7 @@ Return[False]
 
 checkYXYDec[u_] := Module[{st},
 st = YXYDec[u,1];
-If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
+If[isIdentityUpToPhase[MultiplyGates[st,1] . ConjugateTranspose[u]], 
 Return[True], 
 Print["YXYDec failed on input\n", MatrixFormOp[u]]; 
 Return[False]
@@ -886,7 +886,7 @@ Return[False]
 
 checkYZYDec[u_] := Module[{st},
 st = YZYDec[u,1];
-If[isIdentityUpToPhase[MultiplyGates[st,1].ConjugateTranspose[u]], 
+If[isIdentityUpToPhase[MultiplyGates[st,1] . ConjugateTranspose[u]], 
 Return[True], 
 Print["YZYDec failed on input\n", MatrixFormOp[u]]; 
 Return[False]
@@ -980,7 +980,7 @@ out
 
 checkDec2QubitGateUpToDiagonal[u_] := Module[{diag, st},
 st = DecUnitary2Qubits[u,{1,2}, UpToDiagonal-> True];
-If[isIdentityUpToPhase[NMultiplyGates[st,2].ConjugateTranspose[u]], 
+If[isIdentityUpToPhase[NMultiplyGates[st,2] . ConjugateTranspose[u]], 
 Return[True], 
 Print["Dec2Qubit with option UpToDiagonal->True failed on input\n", MatrixFormOp[u]]; 
 Return[False]
@@ -991,9 +991,9 @@ Return[False]
 checkDecUnitary2Qubits[u_,numCNOT_:Null] := Module[{diag, st,out,isCNOTCOUNTCorrect},
 st = DecUnitary2Qubits[u,{1,2}, UpToDiagonal->False];
 isCNOTCOUNTCorrect=If[numCNOT===Null,True,CNOTCount[st]==numCNOT];
-If[isIdentityUpToPhase[NMultiplyGates[st,2].ConjugateTranspose[u]]&&isCNOTCOUNTCorrect, 
+If[isIdentityUpToPhase[NMultiplyGates[st,2] . ConjugateTranspose[u]]&&isCNOTCOUNTCorrect, 
 out=True, 
-If[isIdentityUpToPhase[NMultiplyGates[st,2].ConjugateTranspose[u]],,Print["Dec2Qubit failed on input\n", MatrixForm[u]]];
+If[isIdentityUpToPhase[NMultiplyGates[st,2] . ConjugateTranspose[u]],,Print["Dec2Qubit failed on input\n", MatrixForm[u]]];
  If[isCNOTCOUNTCorrect,,Print["Dec2Qubit outputs wrong number of C-NOT gates on input\n", MatrixForm[u]]];
 out=False
 ];
@@ -1016,8 +1016,8 @@ testResult1&&testResult2
 
 
 testDec2QubitGateUpToDiagonalOneCnot := Module[{oneCnotGate1,oneCnotGate2,testResult1,testResult2},
-oneCnotGate1 = KroneckerProduct[RU[2], RU[2]].CNOTM[1,2,2].KroneckerProduct[RU[2], RU[2]];
-oneCnotGate2= KroneckerProduct[randPermutMat[2,2], randPermutMat[2,2]].CNOTM[1,2,2].KroneckerProduct[randPermutMat[2,2], randPermutMat[2,2]];
+oneCnotGate1 = KroneckerProduct[RU[2], RU[2]] . CNOTM[1,2,2] . KroneckerProduct[RU[2], RU[2]];
+oneCnotGate2= KroneckerProduct[randPermutMat[2,2], randPermutMat[2,2]] . CNOTM[1,2,2] . KroneckerProduct[randPermutMat[2,2], randPermutMat[2,2]];
 testResult1 = checkDec2QubitGateUpToDiagonal[oneCnotGate1];
 testResult2= checkDec2QubitGateUpToDiagonal[oneCnotGate2];
 If[Not[testResult1&&testResult2],
@@ -1052,7 +1052,7 @@ testResult
 
 
 testDec2QubitOneCnot := Module[{oneCnotGate,testResult,v1,v2},
-oneCnotGate = KroneckerProduct[RU[2], RU[2]].CNOTM[1,2,2].KroneckerProduct[RU[2], RU[2]];
+oneCnotGate = KroneckerProduct[RU[2], RU[2]] . CNOTM[1,2,2] . KroneckerProduct[RU[2], RU[2]];
 v1=CreateOperationFromGateList[NGateList[{Rx[Pi,2],CNOT[1,2],Rz[Pi/4,1],Rz[Pi/3,2],Ry[Pi/6,2]}]];
 v2=CreateOperationFromGateList[{Ry[Pi/3,1],Ry[Pi,2],CNOT[2,1]}];
 testResult = checkDecUnitary2Qubits[oneCnotGate,1]&&checkDecUnitary2Qubits[v1,1]&&checkDecUnitary2Qubits[v2,1];
@@ -1115,7 +1115,7 @@ out
 
 checkQSD[testUnitary_,simp_:True]:= Module[{n,op, str,st,opV,opVCorrect,stV,stVCorrect},
 st = QSD[testUnitary,Simp->simp];
-stV =ConjugateTranspose[testUnitary].NCreateIsometryFromListDim[st,Dimensions[testUnitary][[1]]];
+stV =ConjugateTranspose[testUnitary] . NCreateIsometryFromListDim[st,Dimensions[testUnitary][[1]]];
 stVCorrect = isIdentityUpToPhase[stV];
 If[Not[stVCorrect], 
 Print["QSD (st) failed on input\n", MatrixForm[testUnitary]]; 
@@ -1176,15 +1176,15 @@ checkStinespring[chan_,OptionsPattern[]] :=
  For[i = 1, i <= Dimensions[chan][[1]], i++, 
    out = And[out, 
      isZeroMatrix[KroneckerProduct[BraV[i - 1, 2^anc],IdentityMatrix[
-           Dimensions[chan][[2]]]].u - chan[[i]]]]];
-           out=And[out,isIdentity[ConjugateTranspose[u].u]];
+           Dimensions[chan][[2]]]] . u - chan[[i]]]]];
+           out=And[out,isIdentity[ConjugateTranspose[u] . u]];
   If[Not[OptionValue[Exact]],ch=MinimizeKrausRank[chan];
   {uc, ancc} = StinespringQubit[chan]; 
   For[i = 1, i <= Dimensions[ch][[1]], i++, 
    out = And[out, 
      isZeroMatrix[KroneckerProduct[BraV[i - 1, 2^ancc],IdentityMatrix[
-           Dimensions[ch][[2]]]].uc - ch[[i]]]]];out=
-           And[out,isIdentity[ConjugateTranspose[uc].uc]]];out]
+           Dimensions[ch][[2]]]] . uc - ch[[i]]]]];out=
+           And[out,isIdentity[ConjugateTranspose[uc] . uc]]];out]
 
 
 (*Test of Stinespring*)
@@ -1224,11 +1224,11 @@ checkPOVM[POVM_] :=
   For[i = 1, i <= Dimensions[POVM][[1]], i++, 
    out = And[out, 
      isZeroMatrix[MatrixPower[KroneckerProduct[BraV[i - 1, 2^anc],IdentityMatrix[
-           Dimensions[POVM][[2]]]].u ,2]- POVM[[i]]]];
+           Dimensions[POVM][[2]]]] . u ,2]- POVM[[i]]]];
      out=And[out,isZero[Tr[KroneckerProduct[BraV[i - 1, 2^anc],IdentityMatrix[
-           Dimensions[POVM][[2]]]].u.r.CT[u].KroneckerProduct[KetV[i - 1, 2^anc],IdentityMatrix[
-           Dimensions[POVM][[2]]]]]-Tr[POVM[[i]].r]]]]; 
-           And[out,isIdentity[ConjugateTranspose[u].u]]]
+           Dimensions[POVM][[2]]]] . u . r . CT[u] . KroneckerProduct[KetV[i - 1, 2^anc],IdentityMatrix[
+           Dimensions[POVM][[2]]]]]-Tr[POVM[[i]] . r]]]]; 
+           And[out,isIdentity[ConjugateTranspose[u] . u]]]
 
 
 (*Test POVMs*)
@@ -1262,14 +1262,14 @@ testPOVM :=
 
 CheckXToY[x_,y_]:=Module[{q},
 q = XToYTransform[x,y];
-isIdentity[N[CT[q].q]]&&isZeroMatrix[N[q.x-y]]
+isIdentity[N[CT[q] . q]]&&isZeroMatrix[N[q . x-y]]
 ]
 
 
 CheckIsoToUnitarySpecial[v_]:=Module[{u,n,m},
 {n,m}=Dimensions[v];
 u = IsoToUnitarySpecial[v];
-Return[isIdentity[CT[u].u]&&isZeroMatrix[u[[All,1;;m]]-v]&&(Count[Chop[Eigenvalues[u]-1],0]>=n-m)]
+Return[isIdentity[CT[u] . u]&&isZeroMatrix[u[[All,1;;m]]-v]&&(Count[Chop[Eigenvalues[u]-1],0]>=n-m)]
 ]
 
 
@@ -1279,9 +1279,9 @@ n = Dimensions[u][[1]];
 {angles,vecs} = UnitaryEigenvalueDecomp[u];
 length = Dimensions[angles][[1]];
 p= IdentityMatrix[n];
-For[i=1,i<=length,i++,p=p.IsoToUnitary[vecs[[i]]].(
+For[i=1,i<=length,i++,p=p . IsoToUnitary[vecs[[i]]] . (
 SparseArray[{1,1}->(Exp[I*angles[[i]]]-1),{n,n}]+IdentityMatrix[n]
-).CT[IsoToUnitary[vecs[[i]]]]];
+) . CT[IsoToUnitary[vecs[[i]]]]];
 Return[isZeroMatrix[p-u]]
 ]
 
@@ -1290,7 +1290,7 @@ Options[checkKnillDec] = {UseDec -> "QSD"};
 checkKnillDec[v_,OptionsPattern[]]:=Module[{i,st,iso},( 
 st=KnillDec[v,UseDec->OptionValue[UseDec]];
 iso=NCreateIsometryFromListDim[st,Dimensions[v][[1]]];
-isIdentityUpToPhase[N[ConjugateTranspose[v].iso]]
+isIdentityUpToPhase[N[ConjugateTranspose[v] . iso]]
 )
 ]
 
@@ -1485,9 +1485,9 @@ GridBoxSpacings->{"Columns" -> {Offset[0.27999999999999997`], {Offset[0.55999999
 Column], ")"}],
 Function[BoxForm`e$, MatrixForm[BoxForm`e$]]]\)};
 If[Quiet[Check[CheckXToY[x,y],error=1;False]]&&
-(x=PickRandomIsometry[16,64];u = PickRandomUnitary[Dimensions[x][[1]]];y=u.x;
+(x=PickRandomIsometry[16,64];u = PickRandomUnitary[Dimensions[x][[1]]];y=u . x;
 Quiet[Check[CheckXToY[x,y],error=2;False]])&&
-(x=PickRandomIsometry[25,50];u = PickRandomUnitary[Dimensions[x][[1]]];y=u.x;
+(x=PickRandomIsometry[25,50];u = PickRandomUnitary[Dimensions[x][[1]]];y=u . x;
 Quiet[Check[CheckXToY[x,y],error=3;False]])
 ,
 True,
@@ -1571,7 +1571,7 @@ bellUnit= {{1,0,0,-1},{0,1,1,0},{0,-1,1,0},{1,0,0,1}}/2^(1/2);
 For[i = 1, i <= 10, i++, directUnit =  
     FullSimplify[
       DirectSum[FPickRandomUnitary[2, 5], FPickRandomUnitary[2, 5]]]; 
- If[directUnit.CT[directUnit] == IdentityMatrix[4], Break[]]]; If[
+ If[directUnit . CT[directUnit] == IdentityMatrix[4], Break[]]]; If[
  i == 11, Print[
   "Warning: Fractional Knill check on non-unitary input"]];
 error=0;
@@ -1607,13 +1607,13 @@ Print["All tests for Knill's decomposition pass."],,
 checkDenseHouseholder[v_]:=Module[{st,iso},( 
 st=DenseHouseholderDec[v];
 iso=NCreateOperationFromGateList[st];
-isIdentityUpToPhase[N[ConjugateTranspose[v].iso]]
+isIdentityUpToPhase[N[ConjugateTranspose[v] . iso]]
 )
 ]
 checkSparseHouseholder[v_]:=Module[{st,iso},( 
 st=SparseHouseholderDec[v];
 iso=NCreateOperationFromGateList[st];
-isIdentityUpToPhase[N[ConjugateTranspose[v].iso]]
+isIdentityUpToPhase[N[ConjugateTranspose[v] . iso]]
 )
 ]
 
@@ -1669,7 +1669,7 @@ Print["All tests for (dense and sparse) Householder decomposition pass."],,
 CheckStatePreparation[v_,recLevel_]:=Module[{st,iso},
 st=StatePreparation[v,Range[Length[v]],recLevel];
 iso=NCreateIsometryFromListDim[st,Dimensions[v][[1]]];
-isIdentityUpToPhase[ConjugateTranspose[v].iso]
+isIdentityUpToPhase[ConjugateTranspose[v] . iso]
 ]
 
 
@@ -1711,7 +1711,7 @@ Print["All tests for state preparation pass."],,
 checkSparseStatePreparation[psi_]:=Module[{st,iso},( 
 st=SparseStatePreparation[psi];
 iso=NCreateOperationFromGateList[st];
-isIdentityUpToPhase[N[ConjugateTranspose[psi].iso]]
+isIdentityUpToPhase[N[ConjugateTranspose[psi] . iso]]
 )
 ]
 
@@ -1753,13 +1753,13 @@ Print["All tests for sparse state preparation pass."],,
 
 CheckCNOTtoXX[v_]:=Module[{st,st2,iso,ch},
 st=DecIsometryGeneric[v];st2=CNOTRotationsToXXRGates[st];
-iso=CreateOperationFromGateList[st2,Log[2,Dimensions[v][[1]]]];ch=CT[v].iso;
+iso=CreateOperationFromGateList[st2,Log[2,Dimensions[v][[1]]]];ch=CT[v] . iso;
 Chop[ch/ch[[1,1]]-IdentityMatrix[Dimensions[iso][[2]]],10^-6]==0*IdentityMatrix[Dimensions[iso][[2]]]]
 
 CheckXXtoCNOT[v_]:=Module[{st,st2,st3,iso,ch},
 st=DecIsometryGeneric[v];st2=CNOTRotationsToXXRGates[st];
 st3=XXRGatesToCNOTRotations[st2];
-iso=CreateOperationFromGateList[st3,Log[2,Dimensions[v][[1]]]];ch=CT[v].iso;
+iso=CreateOperationFromGateList[st3,Log[2,Dimensions[v][[1]]]];ch=CT[v] . iso;
 Chop[ch/ch[[1,1]]-IdentityMatrix[Dimensions[iso][[2]]],10^-6]==0*IdentityMatrix[Dimensions[iso][[2]]]]
 
 
@@ -1841,8 +1841,8 @@ checkDecInstrumentInQCM[instr_,t_:Null] := Module[{i, st, rho, outInstr, sameAct
   rho = PickRandomRho[Length[instr[[1]][[1]][[1]]]];
   sameAction = True;
   For[i=1, i<=Length[instr], i++,
-    partialResultState = Chop[Sum[instr[[i]][[j]].rho.CT[instr[[i]][[j]]], {j, 1, Length[instr[[i]]]}]];
-    outPartialResultState = Chop[Sum[outInstr[[i]][[j]].rho.CT[outInstr[[i]][[j]]], {j, 1, Length[outInstr[[i]]]}]];
+    partialResultState = Chop[Sum[instr[[i]][[j]] . rho . CT[instr[[i]][[j]]], {j, 1, Length[instr[[i]]]}]];
+    outPartialResultState = Chop[Sum[outInstr[[i]][[j]] . rho . CT[outInstr[[i]][[j]]], {j, 1, Length[outInstr[[i]]]}]];
     If[!(Chop[partialResultState - outPartialResultState] == 0),
      sameAction = False];
   ];
