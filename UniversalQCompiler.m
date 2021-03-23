@@ -1436,6 +1436,7 @@ st=DeleteCases[st,x_/;Chop[x[[2]]]==0];
   Reverse[st]
 )]
 
+\!\(\*UnderscriptBox[\(\( (*Decompose\ a\ single\ qubit\ unitary\ with\ respect\ to\ different\ rotation\ axes\ on\ the\ Bloch\ sphere\ and\nchoose\ a\ decomposition\ that\ requires\ the\ minimal\ amount\ of\ X, Y\ and\ Z\ rotations*) \)\(\n\)\(DecSingleQubitUnitary[u_, action : Except[_?OptionQ] : Null, OptionsPattern[]]\  := \ Module[{indexMin, stList, stXYX, stZXZ, stXZX, stYXY, stYZY}, \ \((\nIsQubitIsometry[u, "\<DecSingleQubitUnitary\>"]; \nstList = {}; \nstXYX = XYXDec[u, action]; \nAppendTo[stList, stXYX]; \nstZXZ = ZXZDec[u, action]; \nAppendTo[stList, stZXZ]; \nstXZX = XZXDec[u, action]; \nAppendTo[stList, stXZX]; \nstYXY = YXYDec[u, action]; \nAppendTo[stList, stYXY]; \nstYZY = YZYDec[u, action]; \nAppendTo[stList, stYZY]; \nindexMin\  = \ \(\(Position[Length /@ stList, Min[Length /@ stList]]\)[\([1]\)]\)[\([1]\)]; \nstList[\([indexMin]\)]\n)\)]\)\), \(_\)]\)
 
 
 (*----------------------------------------Decomposition of uniformly controlled rotation gates (public)----------------------------------------*)
@@ -3435,9 +3436,10 @@ gates
 (*--------------------- Decomposition for isometries [best decomposition scheme is chosen] (public)------------------------------------*)
 
 (*Takes an arbitrary isometry u as an input and chooses the best method (in terms of the required number of C-NOT gates) to decompose it into single-qubit rotations and C-NOT gates*)
-Options[DecIsometry]={FullSimp->True,SpeedUp->False};
-DecIsometry[u_,action:Except[_?OptionQ]:Null,OptionsPattern[]] := Module[{UseDecString,actionQ,qBits,dim,m,n,out,out1,free,i},
+Options[DecIsometry]={FullSimp->True,SpeedUp->True};
+DecIsometry[u_,action:Except[_?OptionQ]:Null,OptionsPattern[]] := Module[{UseDecString,actionQ,qBits,dim,m,n,out,out1,free,i,NumberOfZeros},
 IsQubitIsometry[u,"DecIsometry"];
+NumberOfZeros = Total[Map[Count[#,0]&,Chop[u]]];
 If[OptionValue[SpeedUp],UseDecString="QSD",UseDecString="DecIsometry",Throw[StringForm["Error: 'OptionValue[SpeedUp]' in DecIsometry is neither True nor False"]]];
 If[Length[Dimensions[u]]==1,If[u=={},Return[{}],dim={1,Dimensions[u][[1]]}],dim=Reverse[Dimensions[u]]];
 If[Chop[N[u]]==IdentityMatrix[dim[[2]]][[All,1;;dim[[1]]]],
@@ -3445,16 +3447,29 @@ out={};free=Log2[dim[[2]]/dim[[1]]];
  For[i=1,i<=free,i++,out=Insert[out,{ancillaType,0,i},1]],
 Switch[
 Map[Log2,dim],
+{1,1},out=DecSingleQubitUnitary[u];
+,
 {1,2},out=DecIso12[u,action,FullSimp->OptionValue[FullSimp]];out1=QSD[u,action,FullSimp->OptionValue[FullSimp]];If[CNOTCount[out]>=CNOTCount[out1],out=out1];
 out1=KnillDec[u,action,{FullSimp->OptionValue[FullSimp],UseDec->UseDecString}];If[CNOTCount[out]>=CNOTCount[out1],out=out1];
-out1=ColumnByColumnDec[u,action,{FirstColumn->"StatePreparation",FullSimp->OptionValue[FullSimp]}];If[CNOTCount[out]>=CNOTCount[out1],out=out1];,
-{0,_},out=StatePreparation[u,action,FullSimp->OptionValue[FullSimp]];
-out1=ColumnByColumnDec[u,action,{FullSimp->OptionValue[FullSimp]}];If[CNOTCount[out]>=CNOTCount[out1],out=out1]
+out1=ColumnByColumnDec[u,action,{FirstColumn->"StatePreparation",FullSimp->OptionValue[FullSimp]}];If[CNOTCount[out]>=CNOTCount[out1],out=out1];
+out1=DenseHouseholderDec[u,action,{FullSimp->OptionValue[FullSimp],UseDec->UseDecString}];If[CNOTCount[out]>=CNOTCount[out1],out=out1];
+out1=SparseHouseholderDec[u,action,{FullSimp->OptionValue[FullSimp]}];If[CNOTCount[out]>=CNOTCount[out1],out=out1];
+,
+{0,_},{m,n}=Map[Log2,dim];
+out=StatePreparation[u,action,FullSimp->OptionValue[FullSimp]];
+out1=ColumnByColumnDec[u,action,{FullSimp->OptionValue[FullSimp]}];If[CNOTCount[out]>=CNOTCount[out1],out=out1];
+If[NumberOfZeros > 2^(n/3), (*To save runtime, we only run the sparse decomposition if the number of zeros is reasonable high*)
+out1=SparseStatePreparation[u,action,{FullSimp->OptionValue[FullSimp]}];If[CNOTCount[out]>=CNOTCount[out1],out=out1];
+]
 ,
 {_,_},{m,n}=Map[Log2,dim];
 out=QSD[u,action,FullSimp->OptionValue[FullSimp]];
 out1=KnillDec[u,action,{FullSimp->OptionValue[FullSimp],UseDec->UseDecString}];If[CNOTCount[out]>=CNOTCount[out1],out=out1];out1=ColumnByColumnDec[u,action,{FirstColumn->"StatePreparation",FullSimp->OptionValue[FullSimp]}];If[CNOTCount[out]>=CNOTCount[out1],out=out1];
 out1=ColumnByColumnDec[u,action,FullSimp->OptionValue[FullSimp]];If[CNOTCount[out]>=CNOTCount[out1],out=out1];
+out1=DenseHouseholderDec[u,action,{FullSimp->OptionValue[FullSimp],UseDec->UseDecString}];If[CNOTCount[out]>=CNOTCount[out1],out=out1];
+If[NumberOfZeros > 2^m*2^(n/3),
+out1=SparseHouseholderDec[u,action,{FullSimp->OptionValue[FullSimp]}];If[CNOTCount[out]>=CNOTCount[out1],out=out1];
+];
 ];
 ];
 out
@@ -3665,7 +3680,7 @@ Return[{angles,nonIdEvecs}]
 Takes in an 2^n-by-2^m (m\[LessEqual]n) isometry and outputs a list of gates. See Quantum Circuits for Isometries Section IV B.*)
 (*ToDo [Optimization]: If we work on a odd number of quits, we could implement the first and the last unitary 
 (that comes from Plesch and Brukner's state preparation scheme) as an isometry*)
-Options[KnillDec] = {UseDec->"DecIsometry",Simp->True,FirstColumn->"UCG",FullSimp->True};
+Options[KnillDec] = {UseDec->"QSD",Simp->True,FirstColumn->"UCG",FullSimp->True};
 (*Except[_?OptionQ] is a trick to allow for optional arguments (together with options). Without this trick, having something like f[x_,y:Null,OptionsPattern[]]:=...
 would give an error calling f[x,option\[Rule]optionValue]*)
 KnillDec[v_, action:Except[_?OptionQ]:Null,OptionsPattern[]] := 
@@ -4308,7 +4323,7 @@ PermutationFromToffoli[ctrlQubits_, ctrlValue_, targetQubit_, n_] := Module[{i,a
 
 ApplyPermutation[permutation_, vec_] := Permute[vec,permutation];
 RemoveAncillaGates[gates_] := Module[{}, DeleteCases[gates, x_/;x[[1]]==5] ];
-DecX[j_] := Module[{}, DecIsometry[{{0, 1}, {1, 0}},{j}] ];
+DecX[j_] := Module[{}, {{2,\[Pi],j},{3,\[Pi],j}} ];
 
 (* Reflection Gate R = diag(-1,1,...,1) *)
 ReflectionGate[n_] := Module[{H1,H2,gates,j},
@@ -4343,7 +4358,7 @@ ApplyStandardHouseholderReflection[vec_, iso_] := Module[{},
 	Chop[iso - 2*(vec . (CT[vec] . iso))]
 ];
 
-Options[DenseHouseholderDec] = {Simp->True,FullSimp->True};
+Options[DenseHouseholderDec] = {Simp->True,FullSimp->True,UseDec -> "QSD"};
 DenseHouseholderDec[iso_,action_:Null,OptionsPattern[]] := Module[{V, i, m, n, vec, gates, gatesSP, vectors, k}, 
 	IsQubitIsometry[iso, "DenseHouseholderDec"];
     If[iso == {}, Return[{}]];
@@ -4356,7 +4371,7 @@ DenseHouseholderDec[iso_,action_:Null,OptionsPattern[]] := Module[{V, i, m, n, v
       Return[gatesSP]];
     
     If[m==n==1,
-      gates=DecIsometry[iso];
+      gates=DecSingleQubitUnitary[iso];
       If[OptionValue[Simp],gates=SimplifyGateList[gates]];
       Return[gates]];
     
@@ -4376,7 +4391,7 @@ DenseHouseholderDec[iso_,action_:Null,OptionsPattern[]] := Module[{V, i, m, n, v
 	gates = Join[gates, Reverse[InverseGateList[gatesSP]]];
 	gates = Join[gates, ReflectionGate[n]];
 	For[i = 2, i <= Length[vectors], i++, 
-		gates = Join[gates, MergedStatePreps[vectors[[i-1]],vectors[[i]]]];
+		gates = Join[gates, MergedStatePreps[vectors[[i-1]],vectors[[i]],UseDec->OptionValue[UseDec]]];
 		gates = Join[gates, ReflectionGate[n]]
 	];
 	gatesSP = StatePrepRecursive[vectors[[Length[vectors]]], 1,{FullUnitary->True,FullSimp->OptionValue[FullSimp]}];
