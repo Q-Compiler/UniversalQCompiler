@@ -1738,9 +1738,9 @@ error=0;
 If[Quiet[Check[checkSparseStatePreparation[PickRandomPsi[2^4]],error=1;False]]&&
 Quiet[Check[checkSparseStatePreparation[PickRandomSparsePsi[2^4,2^3]],error=2;False]]&&
 Quiet[Check[checkSparseStatePreparation[PickRandomPsi[2^4]],error=3;False]]&&
-Quiet[Check[checkSparseStatePreparation[N[(randPermutMat[8,8])[[1]]]],error=1;False]]&&
-Quiet[Check[checkSparseStatePreparation[N[(randPermutMat[8,8])[[1]]]],error=2;False]]&&
-Quiet[Check[checkSparseStatePreparation[N[(randPermutMat[8,8])[[1]]]],error=3;False]]
+Quiet[Check[checkSparseStatePreparation[N[{{0},{0},{1},{0},{0},{0},{0},{0}}]],error=1;False]]&&
+Quiet[Check[checkSparseStatePreparation[N[{{0},{0},{0},{0},{0},{1},{0},{0}}]],error=2;False]]&&
+Quiet[Check[checkSparseStatePreparation[N[{{0},{0},{0},{0},{0},{1},{0},{0}}]],error=3;False]]
 ,
 True,
 Print["Error in SparseStatePreparation with error message code ",error];False
