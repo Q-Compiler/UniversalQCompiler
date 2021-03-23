@@ -1604,15 +1604,29 @@ Print["All tests for Knill's decomposition pass."],,
 (*Check Methods based on Householder decomposition*)
 
 
-checkDenseHouseholder[v_]:=Module[{st,iso},( 
+checkDenseHouseholder[v_]:=Module[{st,iso,n,nIso},( 
 st=DenseHouseholderDec[v];
+n = Log2[Dimensions[v][[1]]];
 iso=NCreateOperationFromGateList[st];
+nIso = Log2[Dimensions[iso][[1]]];
+If[nIso < n,
+iso=NCreateOperationFromGateList[st,n];
+(*Ensure that the dimension is correct, even if the gates are
+only acting on a part of the available qubits*)
+];
 isIdentityUpToPhase[N[ConjugateTranspose[v] . iso]]
 )
 ]
-checkSparseHouseholder[v_]:=Module[{st,iso},( 
+checkSparseHouseholder[v_]:=Module[{st,iso,n,nIso},( 
 st=SparseHouseholderDec[v];
+n = Log2[Dimensions[v][[1]]];
 iso=NCreateOperationFromGateList[st];
+nIso = Log2[Dimensions[iso][[1]]];
+If[nIso < n,
+iso=NCreateOperationFromGateList[st,n];
+(*Ensure that the dimension is correct, even if the gates are
+only acting on a part of the available qubits*)
+];
 isIdentityUpToPhase[N[ConjugateTranspose[v] . iso]]
 )
 ]
