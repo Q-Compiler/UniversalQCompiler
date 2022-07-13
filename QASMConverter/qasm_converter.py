@@ -350,10 +350,10 @@ def _define_args():
             '--ibm',
             '-q',
             default=None,
-            const='ibmqx4',
+            const='ibmq_qasm_simulator',
             metavar='dev',
             nargs='?',
-            help='additionally convert to OpenQASM code that is compatible with the IBM Q Computer `dev` (default: ibmqx4)'
+            help='additionally convert to OpenQASM code that is compatible with the IBM Q Computer `dev` (default: ibmq_qasm_simulator)'
     )
     args.add_argument(
             '--use-hardware',
@@ -426,14 +426,18 @@ def main():
     fin = args.infile
     fout = args.outfile
 
-    engines = ibm.get_engine_list()
-    
+    # by default use IBMQ simulator to generate engines
+    dev = 'ibmq_qasm_simulator'
+
     # remove the CNot flipper
     if not args.ibm:
         engines = engines[:-2] + engines[-1:]
         print('Converting...')
     else:
         print('Converting for IBM Q Experience...')
+        dev = ibm.args
+
+    engines = ibm.get_engine_list(device=dev)
 
     if args.on_hardware:
         print('We will run the converted code on the IBM device {}\n.'.format(args.ibm))
