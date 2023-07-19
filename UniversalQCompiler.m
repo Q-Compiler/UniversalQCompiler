@@ -2314,20 +2314,21 @@ out
 Outputs the SU[2] u, such that u.vec=r (1,0) if n=0 or u.vec=r (0,1) if n is 1, 
 where r is the norm of the vector vec. *)
 QubitInvert[vec_,n_]:=
-Module[{psi,phi,mat,r,gate},(
+Module[{psi,phi,mat,r},
 If[MachineNumberQ[vec[[1,1]]]==True ||MachineNumberQ[vec[[2,1]]]==True ,
 mat=N[IdentityMatrix[2]],
 mat=IdentityMatrix[2]
 ];
 r=NormSimplify[vec];
-If[Chop[N[r]] == 0 || (n==0 && Chop[N[vec[[2,1]]]]==0) || (n==1 && Chop[N[vec[[1,1]]]]==0),
-mat,
-psi=Simplify[vec/r];
-phi=FullSimplifyNoRoots[(-CTSimplify[psi] . mat[[2]])[[1]]*mat[[1]]+(CTSimplify[psi] . mat[[1]])[[1]]*mat[[2]]];
-gate=KroneckerProduct[mat[[n+1]],CTSimplify[psi]]+KroneckerProduct[mat[[-(n+1)]],ConjSimplify[phi]*(-1)^n],
-Throw[StringForm["Error: If condition in QubitInvert could did neither evaluate to True nor to False"]]
-]
-)]
+Which[Chop[N[r]]==0,mat,
+n==0 && Chop[N[vec[[2,1]]]]==0,mat.{{Conjugate[vec[[1,1]]]/r,0},{0,vec[[1,1]]/r}},
+n==0 && Chop[N[vec[[1,1]]]]==0,mat.{{0,Conjugate[vec[[2,1]]]/r},{-vec[[2,1]]/r,0}},
+n==1 && Chop[N[vec[[1,1]]]]==0,mat.{{vec[[2,1]]/r,0},{0,Conjugate[vec[[2,1]]]/r}},
+n==1 && Chop[N[vec[[2,1]]]]==0,mat.{{0,-vec[[1,1]]/r},{Conjugate[vec[[1,1]]]/r,0}},
+True,psi=Simplify[vec/r];
+phi=FullSimplifyNoRoots[(-CTSimplify[psi].mat[[2]])[[1]]*mat[[1]]+(CTSimplify[psi].mat[[1]])[[1]]*mat[[2]]];
+KroneckerProduct[mat[[n+1]],CTSimplify[psi]]+KroneckerProduct[mat[[-(n+1)]],ConjSimplify[phi]*(-1)^n]
+]]
 
 (*Helper function: Reorders diagonal elements when the least significant qubit is swiched inbetween the others. Input is given by the diagonal
 entries dia and the insert position pos*)
