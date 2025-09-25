@@ -11,7 +11,7 @@ UniversalQCompiler provides a Mathematica package that allows to decompose gener
 *  Running quantum circuits on the IBM Q Experience (using the OpenQASM converter)
 * Compilation for trapped ions, i.e., converting between gate sequences using CNOT (and single-qubit rotation) to those that use Molmer-Sorensen gates 
 
-A detailed documentation of the Mathematica package can be found on our [webpage](http://www-users.york.ac.uk/~rc973/UniversalQCompiler.html). The notebook Examples.nb helps the user to get started quickly and provides a short overview over the methods provided by UniversalQCompiler.
+A detailed documentation of the Mathematica package can be found on our [webpage](https://colbeck.sites.er.kcl.ac.uk/UniversalQCompiler.html). The notebook Examples.nb helps the user to get started quickly and provides a short overview over the methods provided by UniversalQCompiler.
 
 This project also contains a converter (based on [ProjectQ](https://github.com/ProjectQ-Framework/ProjectQ)) to translate gate sequences from the Mathematica package UniversalQCompiler to [OpenQASM](https://arxiv.org/abs/1707.03429), the quantum assembly language used, for instance, by the IBM Q Experience.
 
@@ -30,7 +30,7 @@ To use our Mathematica package UniversalQCompiler.m, you need to have installed 
 Note that the Makefile is only used for the unstable bindings to Python. You do not need any Makefile for the Mathematica package or the QASM converter.
 
 ## Feedback
-We would be very happy for any feedback about UniversalQCompiler. Please do not hesitate to write us a mail (itenr@itp.phys.ethz.ch or roger.colbeck@york.ac.uk) if you have any suggestions for improvements or comments.
+We would be very happy for any feedback about UniversalQCompiler. Please do not hesitate to write to us (raban@bluewin.ch or roger.colbeck@kcl.ac.uk) if you have any suggestions for improvements or comments.
 
 ## Please cite
 An overview over the package UniversalQCompiler and some theoretical background about the decomposition methods that it uses can be found on [arXiv:1904.01072](https://arxiv.org/pdf/1904.01072.pdf).
@@ -40,7 +40,7 @@ An overview over the package UniversalQCompiler and some theoretical background 
 The code is mainly based on the following papers:
 
 * Raban Iten, Roger Colbeck, Ivan Kukuljan, Jonathan Home, and Matthias Christandl, Phys. Rev. A 93, 032318 (2016).
-* Emanuel Malvetti, Raban Iten, and Roger Colbeck,	arXiv:2006.00016 (2020).
+* Emanuel Malvetti, Raban Iten, and Roger Colbeck, Quantum 5 412 (2021).
 * M. Plesch and Č. Brukner, Phys. Rev. A 83, 032302 (2011).
 * O. Giraud, M. Žnidarič, and B. Georgeot, Phys. Rev. A 80, 042309 (2009).
 * V. V. Shende, S. S. Bullock, and I. L. Markov, IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems 25, 1000 (2006).
@@ -50,7 +50,7 @@ The code is mainly based on the following papers:
 
 ## Authors
 
-The first release of UniversalQCompiler (v0.1) was developed by Raban Iten (ETH Zurich) and Roger Colbeck (University of York) from 2016-19 with contributions from Emanuel Malvetti, Luca Mondada, Gabrielle Pauvert, Oliver Reardon-Smith, Ethan Redmond and Ravjot Singh Kohli:
+The first release of UniversalQCompiler (v0.1) was developed by Raban Iten and Roger Colbeck from 2016-19 with contributions from Emanuel Malvetti, Luca Mondada, Gabrielle Pauvert, Oliver Reardon-Smith, Ethan Redmond and Ravjot Singh Kohli:
 
 * Luca Mondada added the Python interface for converting the circuits to QASM.
 * Oliver Reardon-Smith added functionality to cope with small cases, wrote the first version of the visualisation code and implemented several bug fixes.
